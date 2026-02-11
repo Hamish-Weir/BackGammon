@@ -48,7 +48,7 @@ class Board():
            -5,  0,  0,  0,  3,  0,
             5,  0,  0,  0,  0, -2,  # Blue Home
             0,  0,                  # Red/Blue Bar
-            0,  0])                 # Red/Blue Off
+            0,  0],dtype=np.int8)                 # Red/Blue Off
         
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
         assert sum(self._tiles[self._tiles<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles<0])})"
@@ -56,11 +56,11 @@ class Board():
     def set(self,arr):
         assert isinstance(arr, np.ndarray)
         assert len(arr) == 28, "Array must be of length 28"
-        assert all(isinstance(x, int) for x in arr), "All elements must be integers"
-        assert sum(arr>0) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces"
-        assert sum(arr<0) == TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces"
+        # assert all(isinstance(x, int) or isinstance(x, np.int_) for x in arr), f"All elements must be integers {type(arr[0])}"
+        assert sum(arr[arr>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(arr[arr>0])})"
+        assert sum(arr[arr<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces({sum(arr[arr>0])})"
         
-        self._tiles = arr.copy()
+        self._tiles = np.array(arr,dtype=np.int8)
     
     def get(self):
         return self._tiles.copy()
@@ -228,30 +228,89 @@ class Board():
                                     M4 = B3.get_legal_moves(die1,player)
                                     if M4:
                                         for m4 in M4:
-                                            ms = sorted([m1,m2,m3,m4])
-                                            if not(ms in moveSequenceSet):
-                                                moveSequenceSet.add(tuple(ms))
+                                            ms = [m1,m2,m3,m4]
+                                            tms = tuple(ms)
+                                            if not(tms in moveSequenceSet):
+                                                moveSequenceSet.add(tms)
                                                 moveSequenceList.append(ms)
                                     else:
-                                        ms = sorted([m1,m2,m3])
-                                        if not(ms in moveSequenceSet):
-                                            moveSequenceSet.add(tuple(ms))
+                                        ms = [m1,m2,m3]
+                                        tms = tuple(ms)
+                                        if not(tms in moveSequenceSet):
+                                            moveSequenceSet.add(tms)
                                             moveSequenceList.append(ms)
                             else:
-                                ms = sorted([m1,m2])
-                                if not(ms in moveSequenceSet):
-                                    moveSequenceSet.add(tuple(ms))
+                                ms = [m1,m2]
+                                tms = tuple(ms)
+                                if not(tms in moveSequenceSet):
+                                    moveSequenceSet.add(tms)
                                     moveSequenceList.append(ms)
                     else:
-                        ms = sorted([m1])
-                        if not(ms in moveSequenceSet):
-                            moveSequenceSet.add(tuple(ms))
+                        ms = [m1]
+                        tms = tuple(ms)
+                        if not(tms in moveSequenceSet):
+                            moveSequenceSet.add(tms)
                             moveSequenceList.append(ms)
             else:
-                ms = sorted([])
-                if not(ms in moveSequenceSet):
-                    moveSequenceSet.add(tuple(ms))
+                ms = []
+                tms = tuple(ms)
+                if not(tms in moveSequenceSet):
+                    moveSequenceSet.add(tms)
                     moveSequenceList.append(ms)
+
+        else: # Not Double
+            M1 = self.get_legal_moves(die1,player)
+            if M1:
+                B1 = Board()
+                B1_A = self.get()
+                for m1 in M1:
+                    B1.set(B1_A)
+                    B1.do_move(m1,player)
+                    M2 = B1.get_legal_moves(die2,player)
+                    if M2:
+                        for m2 in M2:
+                            ms = [m1,m2]
+                            tms = tuple(ms)
+                            if not(tms in moveSequenceSet):
+                                moveSequenceSet.add(tms)
+                                moveSequenceList.append(ms)
+                    else:
+                        ms = [m1]
+                        tms = tuple(ms)
+                        if not(tms in moveSequenceSet):
+                            moveSequenceSet.add(tms)
+                            moveSequenceList.append(ms)
+
+            M1 = self.get_legal_moves(die2,player)
+            if M1:
+                B1 = Board()
+                B1_A = self.get()
+                for m1 in M1:
+                    B1.set(B1_A)
+                    B1.do_move(m1,player)
+                    M2 = B1.get_legal_moves(die1,player)
+                    if M2:
+                        for m2 in M2:
+                            ms = [m1,m2]
+                            tms = tuple(ms)
+                            if not(tms in moveSequenceSet):
+                                moveSequenceSet.add(tms)
+                                moveSequenceList.append(ms)
+                    else:
+                        ms = [m1]
+                        tms = tuple(ms)
+                        if not(tms in moveSequenceSet):
+                            moveSequenceSet.add(tms)
+                            moveSequenceList.append(ms)
+
+
+            if len(moveSequenceSet) == 0:
+                moveSequenceSet.add(())
+                moveSequenceList.append([])
+
+
+        
+        return moveSequenceList
 
     def do_move(self,move,player):
         if move:
@@ -262,7 +321,7 @@ class Board():
                 # if killable move dead piece to BAR
                 if self._tiles[end_pip]==-1:
                     self._tiles[end_pip] = 0
-                    self._tiles[Board.P2BAR] = self._tiles[Board.P2BAR]-1
+                    self._tiles[P2BAR] = self._tiles[P2BAR]-1
 
                 self._tiles[start_pip] = self._tiles[start_pip]-1
                 self._tiles[end_pip] = self._tiles[end_pip]+1
@@ -270,7 +329,7 @@ class Board():
                 # if killable move dead piece to BAR
                 if self._tiles[end_pip]== 1:
                     self._tiles[end_pip] = 0
-                    self._tiles[Board.P1BAR] = self._tiles[Board.P1BAR]+1
+                    self._tiles[P1BAR] = self._tiles[P1BAR]+1
 
                 self._tiles[start_pip] = self._tiles[start_pip]+1
                 self._tiles[end_pip] = self._tiles[end_pip]-1
@@ -314,5 +373,10 @@ class Board():
         
         return board_str
 
-    def get_tiles(self):
-        return self._tiles.copy()
+    def get_winner(self):
+        if self._tiles[P1OFF] == TOTAL_PLAYER_PIECES:
+            return 1
+        elif self._tiles[P2OFF] == -TOTAL_PLAYER_PIECES:
+            return -1
+        return 0
+    

@@ -4,7 +4,7 @@ import numpy as np
 BOARD_SIZE = 6
 TOTAL_PLAYER_PIECES = 2
 HOME_SIZE = 2
-
+DIE_SIZE = 2
 
 BOARD_START = 0             # 0
 BOARD_END   = BOARD_SIZE-1  # 23
@@ -95,7 +95,7 @@ class Board():
     def end_point(start,die,player):
         assert player == 1 or player == -1, f"Player ({player}) must be 1 or -1"
         assert (start <= BOARD_END and start >= BOARD_START) or (start <= BAR_END and start >= BAR_START), f"Start ({start}) in must be in Valid Range"
-        assert (die <= 6 and die >= 1), f"die ({die}) must be in 1-6"
+        assert (die <= DIE_SIZE and die >= 1), f"die ({die}) must be in 1-{DIE_SIZE}"
 
         if player == 1:
             if start == P1BAR:            # From Bar
@@ -182,7 +182,7 @@ class Board():
 
 
         assert player == 1 or player == -1, f"Player ({player}) must be 1 or -1"
-        assert (die <= 6 and die >= 1), f"die ({die}) must be in 1-6"
+        assert (die <= DIE_SIZE and die >= 1), f"die ({die}) must be in 1-{DIE_SIZE}"
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
         assert sum(self._tiles[self._tiles<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles<0])})"
         
@@ -220,86 +220,86 @@ class Board():
 
         return sorted(list(moveSet))
     
-    def get_legal_movesequences(self,die1,die2,player):
+    def get_legal_movesequences(self,player):
 
         moveSequenceSet = set()
         moveSequenceList = []
 
         B1 = Board()
-        B2 = Board()
-        B3 = Board()
 
-        if die1 == die2:
-            M1 = self.get_legal_moves(die1,player)
-            if M1:
-                
-                B1_A = self.get()
-                for m1 in M1:
-                    B1.set(B1_A)
-                    B1.do_move(m1,player)
-                    M2 = B1.get_legal_moves(die1,player)
-                    if M2:
-                        for m2 in M2:
-                            ms = [m1,m2]
-                            tms = tuple(ms)
-                            if not(tms in moveSequenceSet):
-                                moveSequenceSet.add(tms)
-                                moveSequenceList.append(ms)
+        for die1 in range(1,DIE_SIZE+1):
+            for die2 in range(1,DIE_SIZE):
+                if die1 == die2:
+                    M1 = self.get_legal_moves(die1,player)
+                    if M1:
+                        
+                        B1_A = self.get()
+                        for m1 in M1:
+                            B1.set(B1_A)
+                            B1.do_move(m1,player)
+                            M2 = B1.get_legal_moves(die1,player)
+                            if M2:
+                                for m2 in M2:
+                                    ms = [m1,m2]
+                                    tms = tuple(ms)
+                                    if not(tms in moveSequenceSet):
+                                        moveSequenceSet.add(tms)
+                                        moveSequenceList.append(ms)
+                            else:
+                                ms = [m1]
+                                tms = tuple(ms)
+                                if not(tms in moveSequenceSet):
+                                    moveSequenceSet.add(tms)
+                                    moveSequenceList.append(ms)
                     else:
-                        ms = [m1]
-                        tms = tuple(ms)
-                        if not(tms in moveSequenceSet):
-                            moveSequenceSet.add(tms)
-                            moveSequenceList.append(ms)
-            else:
-                ms = []
-                tms = tuple(ms)
-                if not(tms in moveSequenceSet):
-                    moveSequenceSet.add(tms)
-                    moveSequenceList.append(ms)
-
-        else: # Not Double
-            M1 = self.get_legal_moves(die1,player)
-            if M1:
-                B1_A = self.get()
-                for m1 in M1:
-                    B1.set(B1_A)
-                    B1.do_move(m1,player)
-                    M2 = B1.get_legal_moves(die2,player)
-                    if M2:
-                        for m2 in M2:
-                            ms = [m1,m2]
-                            tms = tuple(ms)
-                            if not(tms in moveSequenceSet):
-                                moveSequenceSet.add(tms)
-                                moveSequenceList.append(ms)
-                    else:
-                        ms = [m1]
+                        ms = []
                         tms = tuple(ms)
                         if not(tms in moveSequenceSet):
                             moveSequenceSet.add(tms)
                             moveSequenceList.append(ms)
 
-            M1 = self.get_legal_moves(die2,player)
-            if M1:
-                B1_A = self.get()
-                for m1 in M1:
-                    B1.set(B1_A)
-                    B1.do_move(m1,player)
-                    M2 = B1.get_legal_moves(die1,player)
-                    if M2:
-                        for m2 in M2:
-                            ms = [m1,m2]
-                            tms = tuple(ms)
-                            if not(tms in moveSequenceSet):
-                                moveSequenceSet.add(tms)
-                                moveSequenceList.append(ms)
-                    else:
-                        ms = [m1]
-                        tms = tuple(ms)
-                        if not(tms in moveSequenceSet):
-                            moveSequenceSet.add(tms)
-                            moveSequenceList.append(ms)
+                else: # Not Double
+                    M1 = self.get_legal_moves(die1,player)
+                    if M1:
+                        B1_A = self.get()
+                        for m1 in M1:
+                            B1.set(B1_A)
+                            B1.do_move(m1,player)
+                            M2 = B1.get_legal_moves(die2,player)
+                            if M2:
+                                for m2 in M2:
+                                    ms = [m1,m2]
+                                    tms = tuple(ms)
+                                    if not(tms in moveSequenceSet):
+                                        moveSequenceSet.add(tms)
+                                        moveSequenceList.append(ms)
+                            else:
+                                ms = [m1]
+                                tms = tuple(ms)
+                                if not(tms in moveSequenceSet):
+                                    moveSequenceSet.add(tms)
+                                    moveSequenceList.append(ms)
+
+                    M1 = self.get_legal_moves(die2,player)
+                    if M1:
+                        B1_A = self.get()
+                        for m1 in M1:
+                            B1.set(B1_A)
+                            B1.do_move(m1,player)
+                            M2 = B1.get_legal_moves(die1,player)
+                            if M2:
+                                for m2 in M2:
+                                    ms = [m1,m2]
+                                    tms = tuple(ms)
+                                    if not(tms in moveSequenceSet):
+                                        moveSequenceSet.add(tms)
+                                        moveSequenceList.append(ms)
+                            else:
+                                ms = [m1]
+                                tms = tuple(ms)
+                                if not(tms in moveSequenceSet):
+                                    moveSequenceSet.add(tms)
+                                    moveSequenceList.append(ms)
 
 
             if len(moveSequenceSet) == 0:

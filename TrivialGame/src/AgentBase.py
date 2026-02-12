@@ -9,7 +9,7 @@ class AgentBase(ABC):
         self.player = player
 
     @abstractmethod
-    def make_move(self, board: Board, die1: int, die2: int, opp_move):
+    def make_move(self, board: Board, opp_move):
         """Makes a move based on the current board state."""
         pass
 

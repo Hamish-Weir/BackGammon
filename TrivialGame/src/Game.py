@@ -99,17 +99,16 @@ class Game:
         
         while True:
             self._turn += 1
-            die1, die2 = self.random.randint(1,2),self.random.randint(1,2)
+
             currentPlayer: Player = self.players[self.current_player]
             playerAgent = currentPlayer.agent
             logger.info(f"Turn {self.turn}: player {currentPlayer.name}")
             logger.info(f"Starting Board:\n{str(self.board)}")
-            logger.info(f"Dice Roll: {die1}, {die2}")
-            
+
             self._player_board.set(self.board.get())
 
             start = time()
-            ms = playerAgent.make_move(self._player_board, die1, die2, opponentMove)
+            ms = playerAgent.make_move(self._player_board, opponentMove)
             end = time()
 
             if not self._player_board == self._board:
@@ -126,7 +125,7 @@ class Game:
                     logger.info(f"Player {currentPlayer.name} timed out")
                     raise Exception("Player Timed Out")
             
-            if self.is_valid_move_sequence(die1,die2,ms):
+            if self.is_valid_move_sequence(ms):
                 logger.debug("Move is valid")
                 self._make_move(ms)
                 opponentMove = ms
@@ -158,7 +157,7 @@ class Game:
         print(f"winner,{winner}", file=self.logDest)
         logger.info(f"Total Game Time: {Game.ns_to_s(total_time)}s")
 
-    def is_valid_move_sequence(self,die1, die2, ms):
+    def is_valid_move_sequence(self, ms):
         return True
 
     def _make_move(self, ms):

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from unittest.mock import Mock
 
-from AgentBase import AgentBase as Agent
+from src.AgentBase import AgentBase as Agent
 
 
 @dataclass

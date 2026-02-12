@@ -4,8 +4,8 @@ import importlib
 import pstats
 import sys
 
-from src.Game import Game
-from src.Player import Player
+from Game import Game
+from Player import Player
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

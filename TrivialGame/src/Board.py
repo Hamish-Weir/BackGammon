@@ -402,3 +402,9 @@ class Board():
             return -1
         return 0
     
+    def __eq__(self,other):
+        if not isinstance(other, Board):
+            return 0
+        return np.array_equal(self._tiles,other._tiles)
+
+    

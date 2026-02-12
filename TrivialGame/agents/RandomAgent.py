@@ -1,6 +1,6 @@
 from random import choice
-from AgentBase import AgentBase
-from Board import Board
+from src.AgentBase import AgentBase
+from src.Board import Board
 
 class RandomAgent(AgentBase):
     def __init__(self, player):
@@ -9,7 +9,7 @@ class RandomAgent(AgentBase):
 
     def make_move(self, board: Board, die1: int, die2: int, opp_move):
         """Makes a move based on the current board state."""
-
+        
         legal = board.get_legal_movesequences(die1,die2,self.player)
         movesequence = self.choice(legal)
         

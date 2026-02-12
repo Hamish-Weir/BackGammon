@@ -239,36 +239,12 @@ class Board():
                     B1.do_move(m1,player)
                     M2 = B1.get_legal_moves(die1,player)
                     if M2:
-                        B2_A = B1.get()
                         for m2 in M2:
-                            B2.set(B2_A)
-                            B2.do_move(m2,player)
-                            M3 = B2.get_legal_moves(die1,player)
-                            if M3:
-                                B3_A = B2.get()
-                                for m3 in M3:
-                                    B3.set(B3_A)
-                                    B3.do_move(m3,player)
-                                    M4 = B3.get_legal_moves(die1,player)
-                                    if M4:
-                                        for m4 in M4:
-                                            ms = [m1,m2,m3,m4]
-                                            tms = tuple(ms)
-                                            if not(tms in moveSequenceSet):
-                                                moveSequenceSet.add(tms)
-                                                moveSequenceList.append(ms)
-                                    else:
-                                        ms = [m1,m2,m3]
-                                        tms = tuple(ms)
-                                        if not(tms in moveSequenceSet):
-                                            moveSequenceSet.add(tms)
-                                            moveSequenceList.append(ms)
-                            else:
-                                ms = [m1,m2]
-                                tms = tuple(ms)
-                                if not(tms in moveSequenceSet):
-                                    moveSequenceSet.add(tms)
-                                    moveSequenceList.append(ms)
+                            ms = [m1,m2]
+                            tms = tuple(ms)
+                            if not(tms in moveSequenceSet):
+                                moveSequenceSet.add(tms)
+                                moveSequenceList.append(ms)
                     else:
                         ms = [m1]
                         tms = tuple(ms)

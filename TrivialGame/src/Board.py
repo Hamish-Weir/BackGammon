@@ -66,7 +66,6 @@ class Board():
         return self._tiles.copy()
 
     def distance(start, end, player):
-        print()
         assert player == 1 or player == -1, "Player must be 1 or -1"
         assert (start <= BOARD_END and start >= BOARD_START) or (start <= BAR_END and start >= BAR_START), f"Start ({start}) in must be in Valid Range"
         assert (end   <= BOARD_END and end   >= BOARD_START) or (end   <= OFF_END and end   >= OFF_START), f"End ({end}) in must be in Valid Range"
@@ -228,7 +227,7 @@ class Board():
         B1 = Board()
 
         for die1 in range(1,DIE_SIZE+1):
-            for die2 in range(1,DIE_SIZE):
+            for die2 in range(die1,DIE_SIZE+1):
                 if die1 == die2:
                     M1 = self.get_legal_moves(die1,player)
                     if M1:

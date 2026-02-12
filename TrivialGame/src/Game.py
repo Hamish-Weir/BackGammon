@@ -99,7 +99,7 @@ class Game:
         
         while True:
             self._turn += 1
-            die1, die2 = self.random.randint(1,6),self.random.randint(1,6)
+            die1, die2 = self.random.randint(1,2),self.random.randint(1,2)
             currentPlayer: Player = self.players[self.current_player]
             playerAgent = currentPlayer.agent
             logger.info(f"Turn {self.turn}: player {currentPlayer.name}")

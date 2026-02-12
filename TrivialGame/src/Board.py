@@ -1,9 +1,9 @@
 from copy import deepcopy
 import numpy as np
 
-BOARD_SIZE = 24
-TOTAL_PLAYER_PIECES = 15
-HOME_SIZE = 6
+BOARD_SIZE = 6
+TOTAL_PLAYER_PIECES = 2
+HOME_SIZE = 2
 
 
 BOARD_START = 0             # 0
@@ -12,12 +12,6 @@ BAR_START   = BOARD_END+1   # 24
 BAR_END     = BOARD_END+2   # 25
 OFF_START   = BOARD_END+3   # 26
 OFF_END     = BOARD_END+4   # 27
-
-P1LOGICALBAR = -1
-P2LOGICALBAR = 24
-
-P1LOGICALOFF = 24
-P2LOGICALOFF = -1
 
 P1BAR = BAR_START    # 24
 P2BAR = BAR_END      # 25
@@ -37,16 +31,22 @@ P2OUT_END   = BOARD_START + HOME_SIZE       # 6
 P2HOME_START = BOARD_START + HOME_SIZE - 1  # 5
 P2HOME_END   = BOARD_START                  # 0
 
+P1LOGICALBAR = BOARD_START-1
+P2LOGICALBAR = BOARD_END+1
+
+P1LOGICALOFF = BOARD_END+1
+P2LOGICALOFF = BOARD_START-1
+
 class Board():
 
     # Positive = RED
     # Negative = BLUE
     def __init__(self):
         self._tiles = np.array([
-            2,  0,  0,  0,  0, -5,  # Red Home
-            0, -3,  0,  0,  0,  5,
-           -5,  0,  0,  0,  3,  0,
-            5,  0,  0,  0,  0, -2,  # Blue Home
+            2,  0,  # Red Home
+            0,  0,
+            0, -2,  # Blue Home
+
             0,  0,                  # Red/Blue Bar
             0,  0],dtype=np.int8)                 # Red/Blue Off
         
@@ -55,7 +55,7 @@ class Board():
         
     def set(self,arr):
         assert isinstance(arr, np.ndarray)
-        assert len(arr) == 28, "Array must be of length 28"
+        assert len(arr) == BOARD_SIZE+4, "Array must be of length 28"
         # assert all(isinstance(x, int) or isinstance(x, np.int_) for x in arr), f"All elements must be integers {type(arr[0])}"
         assert sum(arr[arr>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(arr[arr>0])})"
         assert sum(arr[arr<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces({sum(arr[arr>0])})"
@@ -358,15 +358,14 @@ class Board():
                     list2.append(f"{RED}{n:4d}{END}")
             return " ".join(list2)
 
-        board_str = f"""                {BLUE}BLUE Home                          {BLUE}Out
-        {BOARD_COLOUR}OFF     {get_spaced_str([1, 2, 3, 4, 5, 6])}      {get_spaced_str([7, 8, 9, 10, 11, 12])}     BAR
-                {BOARD_COLOUR}+----+----+----+----+----+----+    +----+----+----+----+----+----+
-        {BLUE}{-self._tiles[P2OFF]:4d}    {get_spaced_str_board(self._tiles[0:6])}      {get_spaced_str_board(self._tiles[6:12])}   {BLUE}{-self._tiles[P2BAR]:4d}
-                {BOARD_COLOUR}+----+----+----+----+----+----+    +----+----+----+----+----+----+
-        {RED}{self._tiles[P1OFF]:4d}    {get_spaced_str_board(self._tiles[23:17:-1])}      {get_spaced_str_board(self._tiles[17:11:-1])}   {RED}{self._tiles[P1BAR]:4d}
-                {BOARD_COLOUR}+----+----+----+----+----+----+    +----+----+----+----+----+----+
-                {get_spaced_str([24, 23, 22, 21, 20, 19])}      {get_spaced_str([18, 17, 16, 15, 14, 13])}
-                {RED}Red Home                           {RED}Out{END}
+        board_str = f"""                {BLUE}BLUE Home           {BLUE}Out         {RED}RED Home 
+        {BOARD_COLOUR}        {get_spaced_str([1, 2])}      {get_spaced_str([3, 4])}      {get_spaced_str([5, 6])}        
+                {BOARD_COLOUR}+----+----+    +----+----+    +----+----+
+                {get_spaced_str_board(self._tiles[BOARD_START:P2HOME_START+1])}      {get_spaced_str_board(self._tiles[P2OUT_END:P1OUT_END+1])}      {get_spaced_str_board(self._tiles[P1HOME_START:P1HOME_END+1])}       
+                
+                                {BOARD_COLOUR}OFF | {BOARD_COLOUR}BAR
+                                {RED}{self._tiles[P1OFF]:<4d}{RED}|{self._tiles[P1BAR]:>4d}
+                                {BLUE}{-self._tiles[P2OFF]:<4d}{BLUE}|{-self._tiles[P2BAR]:>4d}{END}
         """
         
         return board_str

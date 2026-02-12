@@ -66,6 +66,7 @@ class Board():
         return self._tiles.copy()
 
     def distance(start, end, player):
+        print()
         assert player == 1 or player == -1, "Player must be 1 or -1"
         assert (start <= BOARD_END and start >= BOARD_START) or (start <= BAR_END and start >= BAR_START), f"Start ({start}) in must be in Valid Range"
         assert (end   <= BOARD_END and end   >= BOARD_START) or (end   <= OFF_END and end   >= OFF_START), f"End ({end}) in must be in Valid Range"
@@ -73,25 +74,23 @@ class Board():
         assert not (start == P2BAR and start == P1OFF), f"Invalid Combination of start ({start}) and end ({end})"
 
         if player == 1:
-            match (start,end):
-                case (P1BAR,  P1OFF ):  # Whole Board Jump
-                    return BOARD_SIZE+1
-                case (P1BAR,  _           ):  # Logical Start = -1 
-                    return end+1
-                case (_,            P1OFF ):  # Logical End = 24
-                    return BOARD_SIZE-start
-                case _:                             # Normal Move
-                    return end-start
+            if start == P1BAR and end == P1OFF:
+                return BOARD_SIZE + 1
+            elif start == P1BAR:
+                return end + 1
+            elif end == P1OFF:
+                return BOARD_SIZE - start
+            else:
+                return end - start
         else:
-            match (start,end):
-                case (P2BAR,  P2OFF ):  # Whole Board Jump
-                    return BOARD_SIZE+1
-                case (P2BAR,  _           ):  # Logical Start = -1 
-                    return BOARD_SIZE-end
-                case (_,            P2OFF ):  # Logical End = 24
-                    return start+1
-                case _:                             # Normal Move
-                    return start-end
+            if start == P2BAR and end == P2OFF:  # Whole Board Jump
+                return BOARD_SIZE+1
+            elif start == P2BAR:  # Logical Start = -1 
+                return BOARD_SIZE-end
+            elif end == P2OFF:  # Logical End = 24
+                return start+1
+            else:                             # Normal Move
+                return start-end
 
     def end_point(start,die,player):
         assert player == 1 or player == -1, f"Player ({player}) must be 1 or -1"
@@ -153,12 +152,12 @@ class Board():
         def direct_move_off_point(die,player):
             if player == 1:
                 return (P1LOGICALOFF - die)
-            return (die - P2LOGICALOFF)
+            return (die + P2LOGICALOFF)
         
         def all_start_pips(player):
             if player == 1:
                 return np.where(self._tiles[0:24]>0)[0]
-            return np.where(self._tiles[0:24]<0)[0]
+            return np.where(self._tiles[BOARD_START:BOARD_END+1]<0)[0]
 
         def get_mask(s,d,player):
             
@@ -168,11 +167,28 @@ class Board():
             e = s-d
             return (e >= BOARD_START) & (e <= BOARD_END) & ((self._tiles[e.clip(BOARD_START,BOARD_END)]) < 2)
 
+        def get_furthest(player):
+            if player==1:
+                pips_in_home = np.where(self._tiles[P1HOME_START:P1HOME_END+1]>0)[0]
+                if not len(pips_in_home) == 0:
+                    return P1HOME_START+np.min(pips_in_home)
+                else:
+                    raise Exception(f"No pips in home, this should not happen \n{self}")
+            pips_in_home = np.where(self._tiles[P2HOME_END:P2HOME_START+1]<0)[0]
+            if not len(pips_in_home) == 0:
+                return P2HOME_END+np.max(pips_in_home)
+            else:    
+                raise Exception(f"No pips in home, this should not happen \n{self}")
+
+
         assert player == 1 or player == -1, f"Player ({player}) must be 1 or -1"
         assert (die <= 6 and die >= 1), f"die ({die}) must be in 1-6"
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
         assert sum(self._tiles[self._tiles<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles<0])})"
         
+        if self.get_winner() != 0:
+            return []
+
         moveSet = set()
 
         if has_my_piece(player_bar(player),player): # Piece on Bar, Must Move First
@@ -184,6 +200,12 @@ class Board():
                 start_pip = direct_move_off_point(die,player)
                 if has_my_piece(start_pip,player):
                     moveSet.add((start_pip,die))
+                else:
+                    
+                    start_pip = get_furthest(player) #
+                    if Board.distance(start_pip,player_off(player),player) < die:
+                        moveSet.add((start_pip,die))
+
             possible_start_pips = all_start_pips(player)
 
             start_pips = possible_start_pips
@@ -193,7 +215,7 @@ class Board():
 
             masked_start_pips = start_pips[mask]
 
-            new_moves = [(int(start_pip),int(die)) for start_pip in masked_start_pips]
+            new_moves = [(int(s),int(die)) for s in masked_start_pips]
             moveSet.update(new_moves)
 
         return sorted(list(moveSet))

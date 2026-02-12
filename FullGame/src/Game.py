@@ -1,15 +1,13 @@
-from copy import deepcopy
 import logging
 import os
-from random import randint
 import sys
 from time import perf_counter_ns as time
-from typing import TextIO
+import random
 
 from AgentBase import AgentBase
 from Player import Player
 from Board import Board, P1BAR,P2BAR,P1OFF,P2OFF
-import random
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -31,6 +29,7 @@ class Game:
         self.random = random
 
         self._board = Board()
+        self._player_board = Board()
 
         self.current_player = 1
         self.player1 = player1
@@ -107,12 +106,14 @@ class Game:
             logger.info(f"Starting Board:\n{str(self.board)}")
             logger.info(f"Dice Roll: {die1}, {die2}")
             
-            playerBoard = Board()
-            playerBoard.set(self.board.get())
+            self._player_board.set(self.board.get())
 
             start = time()
-            ms = playerAgent.make_move(playerBoard, die1, die2, opponentMove)
+            ms = playerAgent.make_move(self._player_board, die1, die2, opponentMove)
             end = time()
+
+            if not self._player_board == self._board:
+                raise Exception("Player Modified Board")
 
             currentPlayer.move_time += end - start
 

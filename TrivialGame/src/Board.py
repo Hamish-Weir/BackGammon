@@ -225,24 +225,26 @@ class Board():
         moveSequenceSet = set()
         moveSequenceList = []
 
+        B1 = Board()
+        B2 = Board()
+        B3 = Board()
+
         if die1 == die2:
             M1 = self.get_legal_moves(die1,player)
             if M1:
-                B1 = Board()
+                
                 B1_A = self.get()
                 for m1 in M1:
                     B1.set(B1_A)
                     B1.do_move(m1,player)
                     M2 = B1.get_legal_moves(die1,player)
                     if M2:
-                        B2 = Board()
                         B2_A = B1.get()
                         for m2 in M2:
                             B2.set(B2_A)
                             B2.do_move(m2,player)
                             M3 = B2.get_legal_moves(die1,player)
                             if M3:
-                                B3 = Board()
                                 B3_A = B2.get()
                                 for m3 in M3:
                                     B3.set(B3_A)
@@ -283,7 +285,6 @@ class Board():
         else: # Not Double
             M1 = self.get_legal_moves(die1,player)
             if M1:
-                B1 = Board()
                 B1_A = self.get()
                 for m1 in M1:
                     B1.set(B1_A)
@@ -305,7 +306,6 @@ class Board():
 
             M1 = self.get_legal_moves(die2,player)
             if M1:
-                B1 = Board()
                 B1_A = self.get()
                 for m1 in M1:
                     B1.set(B1_A)

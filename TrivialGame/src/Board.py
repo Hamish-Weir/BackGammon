@@ -55,7 +55,7 @@ class Board():
         
     def set(self,arr):
         assert isinstance(arr, np.ndarray)
-        assert len(arr) == BOARD_SIZE+4, "Array must be of length 28"
+        assert len(arr) == BOARD_SIZE+4, f"Array length ({len(arr)}) must be {BOARD_SIZE+4}"
         # assert all(isinstance(x, int) or isinstance(x, np.int_) for x in arr), f"All elements must be integers {type(arr[0])}"
         assert sum(arr[arr>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(arr[arr>0])})"
         assert sum(arr[arr<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces({sum(arr[arr>0])})"
@@ -250,12 +250,6 @@ class Board():
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
                                     moveSequenceList.append(ms)
-                    else:
-                        ms = []
-                        tms = tuple(ms)
-                        if not(tms in moveSequenceSet):
-                            moveSequenceSet.add(tms)
-                            moveSequenceList.append(ms)
 
                 else: # Not Double
                     M1 = self.get_legal_moves(die1,player)

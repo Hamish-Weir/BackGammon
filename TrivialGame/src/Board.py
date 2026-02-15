@@ -6,18 +6,15 @@ TOTAL_PLAYER_PIECES = 2
 HOME_SIZE = 2
 DIE_SIZE = 2
 
-BOARD_START = 0             # 0
-BOARD_END   = BOARD_SIZE-1  # 23
-BAR_START   = BOARD_END+1   # 24
-BAR_END     = BOARD_END+2   # 25
-OFF_START   = BOARD_END+3   # 26
-OFF_END     = BOARD_END+4   # 27
+BOARD_START = 2             # 0
+BOARD_END   = BOARD_START + BOARD_SIZE-1  # 23
 
-P1BAR = BAR_START    # 24
-P2BAR = BAR_END      # 25
+P2OFF = BOARD_START-2    # 0
+P1BAR = BOARD_START-1    # 1
 
-P1OFF = OFF_START    # 26
-P2OFF = OFF_END      # 27
+P2BAR = BOARD_END+1      # 8
+P1OFF = BOARD_END+2      # 9
+
 
 
 
@@ -43,12 +40,12 @@ class Board():
     # Negative = BLUE
     def __init__(self):
         self._tiles = np.array([
+            0,  0,  # Blue Off, Red Bar
             2,  0,  # Red Home
             0,  0,
             0, -2,  # Blue Home
-
-            0,  0,                  # Red/Blue Bar
-            0,  0],dtype=np.int8)                 # Red/Blue Off
+            0,  0   # Blue Bar, Red Off
+            ],dtype=np.int8)                 
         
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
         assert sum(self._tiles[self._tiles<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles<0])})"
@@ -67,8 +64,8 @@ class Board():
 
     def distance(start, end, player):
         assert player == 1 or player == -1, "Player must be 1 or -1"
-        assert (start <= BOARD_END and start >= BOARD_START) or (start <= BAR_END and start >= BAR_START), f"Start ({start}) in must be in Valid Range"
-        assert (end   <= BOARD_END and end   >= BOARD_START) or (end   <= OFF_END and end   >= OFF_START), f"End ({end}) in must be in Valid Range"
+        assert (start <= BOARD_END and start >= BOARD_START) or (start == P1BAR or start == P2BAR), f"Start ({start}) in must be in Valid Range"
+        assert (end   <= BOARD_END and end   >= BOARD_START) or (end   == P1OFF or end   == P2OFF), f"End ({end}) in must be in Valid Range"
         assert not (start == P1BAR and start == P2OFF), f"Invalid Combination of start ({start}) and end ({end})"
         assert not (start == P2BAR and start == P1OFF), f"Invalid Combination of start ({start}) and end ({end})"
 
@@ -76,37 +73,37 @@ class Board():
             if start == P1BAR and end == P1OFF:
                 return BOARD_SIZE + 1
             elif start == P1BAR:
-                return end + 1
+                return end - P1LOGICALBAR
             elif end == P1OFF:
-                return BOARD_SIZE - start
+                return P1LOGICALOFF - start
             else:
                 return end - start
         else:
             if start == P2BAR and end == P2OFF:  # Whole Board Jump
                 return BOARD_SIZE+1
             elif start == P2BAR:  # Logical Start = -1 
-                return BOARD_SIZE-end
+                return P2LOGICALBAR-end
             elif end == P2OFF:  # Logical End = 24
-                return start+1
+                return start - P2LOGICALOFF
             else:                             # Normal Move
                 return start-end
 
     def end_point(start,die,player):
         assert player == 1 or player == -1, f"Player ({player}) must be 1 or -1"
-        assert (start <= BOARD_END and start >= BOARD_START) or (start <= BAR_END and start >= BAR_START), f"Start ({start}) in must be in Valid Range"
+        assert (start <= BOARD_END and start >= BOARD_START) or (start == P1BAR or start == P2BAR), f"Start ({start}) in must be in Valid Range"
         assert (die <= DIE_SIZE and die >= 1), f"die ({die}) must be in 1-{DIE_SIZE}"
 
         if player == 1:
             if start == P1BAR:            # From Bar
-                return die-1
+                return die + P1LOGICALBAR
             elif start + die > BOARD_END:    # To Off
                 return P1OFF
             else:                               # Normal
                 return start+die
         else:
             if start == P2BAR:    # From Bar
-                return BOARD_SIZE-die
-            elif start - die < 0:       # To Off
+                return P2LOGICALBAR - die
+            elif start - die < BOARD_START:       # To Off
                 return P2OFF
             else:                       # Normal
                 return start-die
@@ -155,8 +152,8 @@ class Board():
         
         def all_start_pips(player):
             if player == 1:
-                return np.where(self._tiles[0:24]>0)[0]
-            return np.where(self._tiles[BOARD_START:BOARD_END+1]<0)[0]
+                return BOARD_START+np.where(self._tiles[BOARD_START:BOARD_END+1]>0)[0]
+            return BOARD_START+np.where(self._tiles[BOARD_START:BOARD_END+1]<0)[0]
 
         def get_mask(s,d,player):
             
@@ -182,7 +179,7 @@ class Board():
 
         assert player == 1 or player == -1, f"Player ({player}) must be 1 or -1"
         assert (die <= DIE_SIZE and die >= 1), f"die ({die}) must be in 1-{DIE_SIZE}"
-        assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
+        assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])}) {self}"
         assert sum(self._tiles[self._tiles<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles<0])})"
         
         if self.get_winner() != 0:
@@ -191,7 +188,7 @@ class Board():
         moveSet = set()
 
         if has_my_piece(player_bar(player),player): # Piece on Bar, Must Move First
-            end_pip = Board.end_point(P1BAR,die,player)
+            end_pip = Board.end_point(player_bar(player),die,player)
             if can_land(end_pip,player):
                 moveSet.add((player_bar(player),die))
         else:
@@ -208,7 +205,6 @@ class Board():
             possible_start_pips = all_start_pips(player)
 
             start_pips = possible_start_pips
-            end_pips = start_pips - die
 
             mask = get_mask(start_pips,die,player)
 
@@ -217,9 +213,12 @@ class Board():
             new_moves = [(int(s),int(die)) for s in masked_start_pips]
             moveSet.update(new_moves)
 
-        return sorted(list(moveSet))
+        legal_moves = sorted(list(moveSet))
+        return legal_moves
     
     def get_legal_movesequences(self,player):
+
+        reversed_order = False if player == 1 else True
 
         moveSequenceSet = set()
         moveSequenceList = []
@@ -231,7 +230,6 @@ class Board():
                 if die1 == die2:
                     M1 = self.get_legal_moves(die1,player)
                     if M1:
-                        
                         B1_A = self.get()
                         for m1 in M1:
                             B1.set(B1_A)
@@ -240,12 +238,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
+                                    # ms = sorted(ms,reverse=reversed_order)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
+                                # ms = sorted(ms,reverse=reversed_order)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -262,12 +262,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
+                                    # ms = sorted(ms,reverse=reversed_order)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
+                                # ms = sorted(ms,reverse=reversed_order)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -283,12 +285,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
+                                    # ms = sorted(ms,reverse=reversed_order)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
+                                # ms = sorted(ms,reverse=reversed_order)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -331,11 +335,11 @@ class Board():
 
     def __str__(self) -> str:
         RED = "\033[91m"
-        BLUE = "\033[0;34m"
+        BLU = "\033[0;34m"
         YELLOW = "\033[1;33m"
         END = "\033[0m"
 
-        BOARD_COLOUR = YELLOW
+        BOA = YELLOW
         
         def get_spaced_str(list: list[int]):
             return " ".join([f"{n:4d}" for n in list])
@@ -346,21 +350,18 @@ class Board():
                 if n == 0:
                     list2.append(f"    ")
                 elif n < 0:
-                    list2.append(f"{BLUE}{-n:4d}{END}")
+                    list2.append(f"{BLU}{-n:4d}{END}")
                 else:
                     list2.append(f"{RED}{n:4d}{END}")
             return " ".join(list2)
 
-        board_str = f"""                {BLUE}BLUE Home           {BLUE}Out         {RED}RED Home 
-        {BOARD_COLOUR}        {get_spaced_str([1, 2])}      {get_spaced_str([3, 4])}      {get_spaced_str([5, 6])}        
-                {BOARD_COLOUR}+----+----+    +----+----+    +----+----+
-                {get_spaced_str_board(self._tiles[BOARD_START:P2HOME_START+1])}      {get_spaced_str_board(self._tiles[P2OUT_END:P1OUT_END+1])}      {get_spaced_str_board(self._tiles[P1HOME_START:P1HOME_END+1])}       
-                
-                                {BOARD_COLOUR}OFF | {BOARD_COLOUR}BAR
-                                {RED}{self._tiles[P1OFF]:<4d}{RED}|{self._tiles[P1BAR]:>4d}
-                                {BLUE}{-self._tiles[P2OFF]:<4d}{BLUE}|{-self._tiles[P2BAR]:>4d}{END}
-        """
-        
+        board_str  = f""
+        board_str += f"{BLU}BLUE OFF     {BOA}| {BLU}BLUE Home           {BLU}Out         {RED}RED Home{BOA}|      {RED}RED OFF\n"
+        board_str += f"     {RED}RED BAR {BOA}| {BOA}{get_spaced_str([1, 2])}      {get_spaced_str([3, 4])}      {get_spaced_str([5, 6])} {BOA}| {BLU}BLUE BAR     \n"
+        board_str += f"             {BOA}|+----+----+    +----+----+    +----+----+|\n"
+        board_str += f"{BLU}{-self._tiles[P2OFF]:>4d}{RED}{self._tiles[P1BAR]:>4d}     {BOA}|{get_spaced_str_board(self._tiles[BOARD_START:P2HOME_START+1])}      {get_spaced_str_board(self._tiles[P2OUT_END:P1OUT_END+1])}      {get_spaced_str_board(self._tiles[P1HOME_START:P1HOME_END+1])}  {BOA}| {BLU}{-self._tiles[P2BAR]:>4d}{RED}{self._tiles[P1OFF]:>4d}      \n"
+        board_str += f"{END}"
+
         return board_str
 
     def get_winner(self):

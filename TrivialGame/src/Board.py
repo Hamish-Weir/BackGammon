@@ -238,14 +238,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
-                                    # ms = sorted(ms,reverse=reversed_order)
+                                    ms = sorted(ms,reverse=reversed_order)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
-                                # ms = sorted(ms,reverse=reversed_order)
+                                ms = sorted(ms,reverse=reversed_order)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -262,14 +262,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
-                                    # ms = sorted(ms,reverse=reversed_order)
+                                    ms = sorted(ms,reverse=reversed_order)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
-                                # ms = sorted(ms,reverse=reversed_order)
+                                ms = sorted(ms,reverse=reversed_order)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -285,14 +285,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
-                                    # ms = sorted(ms,reverse=reversed_order)
+                                    ms = sorted(ms,reverse=reversed_order)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
-                                # ms = sorted(ms,reverse=reversed_order)
+                                ms = sorted(ms,reverse=reversed_order)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)

@@ -25,9 +25,10 @@ class MCTSNode:
     def ucb_score(self, exploration: float = 1.4) -> float:
         if self.visits == 0:
             return float("inf")
+
         return (
-            self.value
-            + 0 * (math.sqrt(math.log(self.parent.visits) / self.visits))
+            exploration * (math.sqrt(math.log(self.parent.visits) / self.visits))
+            - self.value
         )
     
     def backup(self, v):
@@ -36,16 +37,42 @@ class MCTSNode:
         self.value = self.total_value/self.visits
 
     def __str__(self):
-        return f"MCTSNode(children: {len(self.children.values())}, Visits: {self.visits}, Total Value: {self.total_value}, Value: {self.value}, Action {self.movesequence})\n"
+        return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Visits: {self.visits:>4d}, Total Value: {self.total_value:>.4f}, Value: {self.value:>.4f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
+        
 
     def __repr__(self) -> str:
         return str(self)
+    
+    def ms_to_str(self,ms,player):
+        if not ms == None:
+            ms_str = "["
+            for m in ms:
+                m_str = self.m_to_str(m,player)
+                ms_str += m_str
+            ms_str += "]"    
+            return ms_str  
+        else:
+            return "None"
+
+    def m_to_str(self,m,player):
+        if m[0] == P1BAR or m[0] == P2BAR:
+                s = "BAR"
+        else:
+            s = f"{m[0]-BOARD_START+1:3d}"
+
+        if Board.end_point(m[0],m[1],player) == P1OFF or Board.end_point(m[0],m[1],player) == P2OFF:
+            e = "OFF"
+        else:
+            e = f"{Board.end_point(m[0],m[1],player)-BOARD_START+1:3d}"
+
+        m_str = str(f"({s}, {e}, {m[1]}), ")
+        return m_str
 
 class MCTSAgent(AgentBase):
     def __init__(self, 
         player, 
         simulations = 100,
-        c_puct = 1.4,
+        c_puct = 1,
         rollouts = 50,
         max_depth = 50,
     ):
@@ -108,7 +135,7 @@ class MCTSAgent(AgentBase):
     def _simulate(self, node: MCTSNode) -> float:
         winner = node.board.get_winner()
         if not winner == 0:
-            return 1.0 if winner == self.player else -1.0
+            return 1 if winner == node.player else -1
         return  self._evaluation(node.board, node.player)
 
     def _backpropagate(self, node: MCTSNode, v: float):
@@ -129,15 +156,22 @@ class MCTSAgent(AgentBase):
                 b.set(arr)
                 depth = 0
                 player_turn = player
-
+                turns = 0
                 while True:
+                    turns+=1
                     legal_ms = b.get_legal_movesequences(player_turn)
                     ms = self.choice(legal_ms)
                     b.do_move_sequence(ms, player_turn)
 
                     depth += 1
                     if not (b.get_winner() == 0) or depth == self.max_depth:
-                        results[i] = b.get_winner()
+                        if b.get_winner() == 0:
+                            results[i] = 0
+                        else:
+                            if b.get_winner() == player:
+                                results[i] = 1
+                            else:
+                                results[i] = -1
                         break
                     
                     player_turn = -player_turn

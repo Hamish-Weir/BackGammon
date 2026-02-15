@@ -6,7 +6,7 @@ import random
 
 from src.AgentBase import AgentBase
 from src.Player import Player
-from src.Board import P1LOGICALOFF, P2LOGICALOFF, Board, P1BAR,P2BAR,P1OFF,P2OFF
+from src.Board import BOARD_START, P1LOGICALOFF, P2LOGICALOFF, Board, P1BAR,P2BAR,P1OFF,P2OFF
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +64,12 @@ class Game:
         if m[0] == P1BAR or m[0] == P2BAR:
                 s = "BAR"
         else:
-            s = f"{m[0]-P2LOGICALOFF:3d}"
+            s = f"{m[0]-BOARD_START+1:3d}"
 
         if Board.end_point(m[0],m[1],player) == P1OFF or Board.end_point(m[0],m[1],player) == P2OFF:
             e = "OFF"
         else:
-            e = f"{Board.end_point(m[0],m[1],player)-P2LOGICALOFF:3d}"
+            e = f"{Board.end_point(m[0],m[1],player)-BOARD_START+1:3d}"
 
         m_str = str(f"({s}, {e}, {m[1]}), ")
         return m_str

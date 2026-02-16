@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod
-from Board import Board
+from src.Board import Board
 
 class AgentBase(ABC):
     @abstractmethod

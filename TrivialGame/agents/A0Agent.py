@@ -9,14 +9,14 @@ from src.AgentBase import AgentBase
 from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, P1BAR, P1HOME_END, P1HOME_START, P1OFF, P2BAR, P2HOME_END, P2HOME_START, P2OFF, Board
 
 @dataclass
-class MCTSNode:
+class A0Node:
     board: Board
     player: int
 
-    parent: Optional[MCTSNode] = None
+    parent: Optional[A0Node] = None
     movesequence: Optional[list] = None
 
-    children: Dict[int, MCTSNode] = field(default_factory=dict)
+    children: Dict[int, A0Node] = field(default_factory=dict)
     visits: int = 0
     total_value: float = 0.0
     value: float = 0.0
@@ -68,7 +68,7 @@ class MCTSNode:
         m_str = str(f"({s}, {e}, {m[1]}), ")
         return m_str
 
-class MCTSAgent(AgentBase):
+class A0Agent(AgentBase):
     def __init__(self, 
         player, 
         simulations = 200,
@@ -90,7 +90,7 @@ class MCTSAgent(AgentBase):
         root_board = Board()
         root_board.set(board.get())
 
-        self.root = MCTSNode(board=root_board, player=self.player)
+        self.root = A0Node(board=root_board, player=self.player)
         self.root.untried_moves = self.root.board.get_legal_movesequences(self.player)
 
         for i in range(self.simulations):
@@ -106,21 +106,21 @@ class MCTSAgent(AgentBase):
         
         return best_movesequence
     
-    def _select(self, node: MCTSNode) -> MCTSNode:
+    def _select(self, node: A0Node) -> A0Node:
         while node.board.get_winner() == 0:
             if node.untried_moves:
                 return self._expand(node)
             node = max(node.children.values(), key=lambda c: c.ucb_score(self.c_puct))
         return node
 
-    def _expand(self, node: MCTSNode) -> MCTSNode:
+    def _expand(self, node: A0Node) -> A0Node:
         move_sequence_made = node.untried_moves.pop()
 
         next_board = Board()
         next_board.set(node.board.get())
         next_board.do_move_sequence(move_sequence_made,node.player)
 
-        child = MCTSNode(
+        child = A0Node(
                 board           = next_board,
                 player          = -node.player,
                 parent          = node,
@@ -132,13 +132,13 @@ class MCTSAgent(AgentBase):
         node.children[id(child)] = child
         return child
 
-    def _simulate(self, node: MCTSNode) -> float:
+    def _simulate(self, node: A0Node) -> float:
         winner = node.board.get_winner()
         if not winner == 0:
             return 1 if winner == node.player else -1
         return  self._evaluation(node.board, node.player)
 
-    def _backpropagate(self, node: MCTSNode, v: float):
+    def _backpropagate(self, node: A0Node, v: float):
         while node:
             node.backup(v)
             v=-v
@@ -180,4 +180,3 @@ class MCTSAgent(AgentBase):
         results = rollout(board,player)
         win_rate = np.mean(results == 1)
         return win_rate
-    

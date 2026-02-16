@@ -71,10 +71,10 @@ class MCTSNode:
 class MCTSAgent(AgentBase):
     def __init__(self, 
         player, 
-        simulations = 100,
+        simulations = 200,
         c_puct = 1,
-        rollouts = 50,
-        max_depth = 50,
+        rollouts = 100,
+        max_depth = 20,
     ):
         super().__init__(player)
         self.simulations = simulations

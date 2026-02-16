@@ -1,12 +1,16 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import math
 import random
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import numpy as np
+
+import torch
+
+from networks.A0Network import A0Network
 from src.AgentBase import AgentBase
-from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, P1BAR, P1HOME_END, P1HOME_START, P1OFF, P2BAR, P2HOME_END, P2HOME_START, P2OFF, Board
+from src.Board import BOARD_START, P1BAR, P1OFF, P2BAR, P2OFF, Board
 
 @dataclass
 class A0Node:
@@ -16,30 +20,68 @@ class A0Node:
     parent: Optional[A0Node] = None
     movesequence: Optional[list] = None
 
-    children: Dict[int, A0Node] = field(default_factory=dict)
-    visits: int = 0
-    total_value: float = 0.0
-    value: float = 0.0
-    untried_moves: Optional[list[list]] = None
-
-    def ucb_score(self, exploration: float = 1.4) -> float:
-        if self.visits == 0:
-            return float("inf")
-
-        return (
-            exploration * (math.sqrt(math.log(self.parent.visits) / self.visits))
-            - self.value
-        )
+    legal_movesequences: Optional[list[list]] = None
     
-    def backup(self, v):
-        self.visits += 1
+    children: dict[tuple, A0Node | None] = {}
+    child_prior: Dict[tuple, float]  = {}
+
+    child_visits: Dict[tuple, int] = {}
+    child_total_value: Dict[tuple, float]  = {}
+    child_value: Dict[tuple, float]  = {}
+    
+    def __init__(
+        self,
+        board: Board,
+        player: int,
+        model,
+        parent: Optional[A0Node] = None,
+        movesequence: Optional[list] = None
+    ):
+        self.board = board
+        self.player = player
+        self.parent = parent
+        self.movesequence = movesequence
+        
+        self.legal_movesequences = self.board.get_legal_movesequences(self.player)
+        self.init_val_and_pri(model)
+
+    def best_child(self, exploration: float = 1.4) -> (Optional[A0Node], A0Node): # type: ignore
+        best_move_sequence = None
+        best_PUCT = -math.inf
+        children_visits = sum([self.child_visits.get(ms,0) for ms in self.legal_movesequences])
+        for move_sequence in self.legal_movesequences:
+            c_key = tuple(move_sequence)
+            value = self.child_total_value.get(c_key,0.0)
+            prior = self.child_prior.get(c_key,0.0)
+            child_visits = self.child_visits.get(c_key,0.0)
+
+            PUCT = (
+                value +
+                exploration * prior * math.sqrt(children_visits)/(1+child_visits)
+            )
+
+            if PUCT > best_PUCT:
+                best_PUCT = PUCT
+                best_move_sequence = move_sequence
+
+        best_child = self.children.get(best_move_sequence,None)
+
+        return best_child, self
+    
+    def backup(self, move_sequence, v):
+        self.child_visits[move_sequence] = self.child_visits.get(move_sequence,0) + 1
         self.total_value += v
         self.value = self.total_value/self.visits
+
+    def init_val_and_pri(self,model):
+
+        # model[]
+        pass
+
 
     def __str__(self):
         return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Visits: {self.visits:>4d}, Total Value: {self.total_value:>.4f}, Value: {self.value:>.4f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
         
-
     def __repr__(self) -> str:
         return str(self)
     

@@ -1,6 +1,7 @@
 
 from concurrent.futures import ProcessPoolExecutor
 import os
+import traceback
 import multiprocessing as mp
 
 from agents.RandomAgent import RandomAgent
@@ -14,7 +15,7 @@ def play_game(p):
     try:
         player1 = Player(
             "P1",
-            MCTSAgent(1),
+            RandomAgent(1),
         )
 
         player2 = Player(
@@ -53,8 +54,14 @@ def play_game(p):
         print(f"Process {p:>4d} Finished")
         return board.get_winner(), turn
     except Exception as e:
-        raise e
+        file_name = f"process_error_{os.getpid()}"
 
+        with open("error.log", "a") as f:
+            f.write(f"PID: {os.getpid()}\n")
+            f.write(f"Exception: {str(e)}\n")
+            f.write(traceback.format_exc())
+            f.write("\n" + "="*60 + "\n")
+        raise  # preserves original traceback
 
 def init_worker():
     os.environ["OMP_NUM_THREADS"] = "1"

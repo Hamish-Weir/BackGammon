@@ -37,7 +37,7 @@ class MCTSNode:
         self.value = self.total_value/self.visits
 
     def __str__(self):
-        return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Visits: {self.visits:>4d}, Total Value: {self.total_value:>.4f}, Value: {self.value:>.4f}, Action: {self.ms_to_str(self.movesequence,-self.player)}\n"
+        return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Visits: {self.visits:>4d}, Total Value: {self.total_value:>.4f}, Value: {self.value:>.4f}, Action: {self.ms_to_str(self.movesequence,1)}\n"
         
 
     def __repr__(self) -> str:

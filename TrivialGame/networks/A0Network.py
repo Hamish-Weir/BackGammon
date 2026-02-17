@@ -37,9 +37,9 @@ class A0Network(nn.Module):
     def __init__(
         self,
         input_size: int = BOARD_SIZE+4,
-        output_size: int = 701,
+        output_size: int = 127,
         in_channels: int = 1,
-        channels: int = 256,
+        channels: int = 128,
         num_res_blocks: int = 10,
     ):
         super().__init__()
@@ -87,9 +87,9 @@ class A0Network(nn.Module):
         """
         # Allow single-sample input
         if x.dim() == 1:
-            x = x.unsqueeze(0)  # (1, 31)
+            x = x.unsqueeze(0)  # (1, INPUT_SIZE)
         if x.dim() == 2:
-            x = x.unsqueeze(1)  # (B, 1, 31)
+            x = x.unsqueeze(1)  # (B, 1, INPUT_SIZE)
 
         assert x.dim() == 3 and x.size(1) == 1 and x.size(2) == self.input_size, \
             f"Expected input shape (B, 2, {self.input_size}), got {tuple(x.shape)}"

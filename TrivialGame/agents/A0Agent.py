@@ -10,7 +10,9 @@ import torch
 
 from networks.A0Network import A0Network
 from src.AgentBase import AgentBase
-from src.Board import BOARD_START, P1BAR, P1OFF, P2BAR, P2OFF, Board
+from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, P1BAR, P1OFF, P2BAR, P2OFF, Board
+
+n = BOARD_SIZE+1
 
 @dataclass
 class A0Node:
@@ -74,11 +76,60 @@ class A0Node:
         self.child_total_value[c_key] = total_value
         self.value = total_value/total_visits
 
+    def movesequence_to_idx(self,movesequence):
+        # Note: Function is Bar position dependent 
+        L = len(movesequence)
+        if L == 2:
+            m1,m2 = movesequence[0], movesequence[1]
+            s1,d1 = m1
+            s2,d2 = m2
+            assert s1<=s2
+            
+            s1id = s1 - BOARD_START + 1 # s1 -> [0..6]
+            s2id = s2 - BOARD_START + 1 # s2 -> [0..6]
+            eq = (((s1id) * ((n+(n-(s1id-1)))))//2) + (s2id-s1id)
+
+            match (d1,d2):
+                case (1,1):
+                    return 0 + eq   # 0-27
+                case (1,2):
+                    return 28 + eq  # 28-55
+                case (2,1):
+                    return 56 + eq  # 56-83
+                case (2,2):
+                    return 84 + eq  # 84-111
+        elif L == 1:
+
+            m1 = movesequence[0]
+            s1,d1 = m1
+
+            s1id = s1 - BOARD_START + 1 # s1 -> [0..6]
+
+            match d1:
+                case 1:
+                    return 112 + s1id # 112-118
+                case 2:
+                    return 119 + s1id # 119-125
+        else:
+            return 126              # 126 (Skip Move)
+
+
+    def raw_policy_to_policy_dict(self,policy):
+        policy_dict = {}
+        for movesequence in self.legal_movesequences:
+            c_key = tuple(movesequence)
+            idx = self.movesequence_to_idx(movesequence)
+            policy_dict[c_key] = policy[idx]
+
+
     def init_val_and_pri(self,model:A0Network):
         state_tensor = self.encode_board()
-        value, policy = model[state_tensor]
+        val, pol = model[state_tensor]
         
-        pass
+        value = val.item()
+        policy = pol.squeeze(0).detach().cpu().numpy()
+        
+
 
     def encode_board(self):
         board_arr = self.board._tiles
@@ -88,7 +139,7 @@ class A0Node:
         else:
             player_board = -board_arr[::-1].copy()
 
-        return torch.tensor(player_board)
+        return torch.tensor(player_board, dtype=torch.float32)
 
 
     def __str__(self):

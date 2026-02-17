@@ -43,10 +43,16 @@ class A0Node:
         
         self.legal_movesequences = self.board.get_legal_movesequences(self.player)
 
+        self.children:           Dict[tuple, A0Node | None]  = {}
+        self.child_prior:        Dict[tuple, float]          = {}
+        self.child_visits:       Dict[tuple, int]            = {}
+        self.child_total_value:  Dict[tuple, float]          = {}
+        self.child_value:        Dict[tuple, float]          = {}
+
     def best_child(self, exploration: float = 1.4) -> (Optional[A0Node], A0Node): # type: ignore
         best_move_sequence = None
         best_PUCT = -math.inf
-        children_visits = sum([self.child_visits.get(ms,0) for ms in self.legal_movesequences])
+        children_visits = sum([self.child_visits.get(tuple(ms),0) for ms in self.legal_movesequences])
         for move_sequence in self.legal_movesequences:
             c_key = tuple(move_sequence)
             value = self.child_total_value.get(c_key,0.0)
@@ -54,17 +60,18 @@ class A0Node:
             child_visits = self.child_visits.get(c_key,0.0)
 
             PUCT = (
-                value +
                 exploration * prior * math.sqrt(children_visits)/(1+child_visits)
+                + value
             )
 
             if PUCT > best_PUCT:
                 best_PUCT = PUCT
                 best_move_sequence = move_sequence
 
-        best_child = self.children.get(best_move_sequence,None)
+        c_key = tuple(best_move_sequence)
+        best_child = self.children.get(c_key,None)
 
-        return best_child, self
+        return best_child, self, best_move_sequence
     
     def backup(self, move_sequence, v):
         c_key = tuple(move_sequence)
@@ -74,7 +81,7 @@ class A0Node:
 
         self.child_visits[c_key] = total_visits
         self.child_total_value[c_key] = total_value
-        self.value = total_value/total_visits
+        self.child_value[c_key] = total_value/total_visits
 
     @staticmethod
     def _movesequence_to_idx(movesequence):
@@ -138,6 +145,10 @@ class A0Node:
             p_ms = self._flip_movesequence(ms,self.player)
             idx = self._movesequence_to_idx(p_ms)
             policy_dict[c_key] = policy[idx]
+
+        total = sum(policy_dict.values())
+        policy_dict = {k: v / total for k, v in policy_dict.items()}
+
         return policy_dict
 
     def get_val_init_pri(self,model:A0Network):
@@ -145,11 +156,12 @@ class A0Node:
 
         model.eval()
         with torch.inference_mode():
-            val, pol = model[state_tensor]
+            val, pol = model(state_tensor)
         
         value = val.item()
-        policy = pol.squeeze(0).detach().cpu().numpy()
+        policy = torch.softmax(pol, dim=-1).squeeze(0).cpu().numpy()
         
+
         self.child_prior = self._raw_policy_to_policy_dict(policy) # Initialize child priors
 
         return value
@@ -166,8 +178,11 @@ class A0Node:
 
 
     def __str__(self):
-        return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Visits: {self.visits:>4d}, Total Value: {self.total_value:>.4f}, Value: {self.value:>.4f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
-        
+        if self.parent:
+            c_key = tuple(self.movesequence)
+            return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>2d}, Prior: {self.parent.child_prior.get(c_key,0):>.3f}, Visits: {self.parent.child_visits.get(c_key,0):>3d}, Total V: {self.parent.child_total_value.get(c_key,0.0):>.2f}, Value: {self.parent.child_value.get(c_key,0.0):>.5f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
+        return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Prior: {None}, Visits: {None}, Total Value: {None}, Value: {None}, Action: {None}\n"
+
     def __repr__(self) -> str:
         return str(self)
     
@@ -199,25 +214,20 @@ class A0Node:
 class A0Agent(AgentBase):
     def __init__(self, 
         player, 
-        simulations = 200,
+        model_path = "TrivialGame/models/best_model.pth",
+        simulations = 800,
         c_puct = 1,
-        model_path = "models/best_model.pth",
         training_param = None
     ):
         super().__init__(player)
-        self.simulations = simulations
-        self.c_puct= c_puct
-        self.root = None
+        
 
         self.model_path = model_path
         self.model = A0Network()
 
-        try:
-            if model_path:
-                self.model.load_state_dict(torch.load(model_path,weights_only=True))
-        except Exception:
-            print("Model not Found; Initialized with Random Weights")
-
+        self.simulations = simulations
+        self.c_puct= c_puct
+        self.root = None
 
         if training_param:
             self.dirichlet_alpha = training_param[0]
@@ -226,6 +236,17 @@ class A0Agent(AgentBase):
             self.training = True
         else:
             self.training = False
+
+        try:
+            if model_path:
+                self.model.load_state_dict(torch.load(model_path,weights_only=True))
+        except Exception:
+            if self.training:
+                print("Model not Found; Initialized with Random Weights")
+            else:
+                raise Exception(f"Model Not Found ({model_path})")
+
+
 
         
 
@@ -236,7 +257,7 @@ class A0Agent(AgentBase):
         root_board.set(board.get())
 
         self.root = A0Node(board=root_board, player=self.player)
-        self.root.untried_moves = self.root.board.get_legal_movesequences(self.player)
+        self.root.get_val_init_pri(self.model)
 
         for i in range(self.simulations):
             node = self._select(self.root)
@@ -244,8 +265,7 @@ class A0Agent(AgentBase):
             self._backpropagate(node, v)
 
         if self.root.children:
-            best_child = max(self.root.children.values(), key=lambda c: (c.visits, c.value))
-            best_movesequence = best_child.movesequence
+            best_movesequence = max(self.root.legal_movesequences, key=lambda c: (self.root.child_visits.get(tuple(c),0), self.root.child_value.get(tuple(c),0.0)))
         else: 
             raise Exception("Too Few Simulations Run")
         
@@ -253,75 +273,53 @@ class A0Agent(AgentBase):
     
     def _select(self, node: A0Node) -> A0Node:
         while node.board.get_winner() == 0:
-            if node.untried_moves:
-                return self._expand(node)
-            node = max(node.children.values(), key=lambda c: c.ucb_score(self.c_puct))
+            node, parent, ms = node.best_child(self.c_puct)
+            if not node:
+                return self._expand(node,parent,ms)
         return node
 
-    def _expand(self, node: A0Node) -> A0Node:
-        move_sequence_made = node.untried_moves.pop()
-
+    def _expand(self, node: A0Node|None, parent:A0Node, movesequence:list) -> A0Node:
+        
         next_board = Board()
-        next_board.set(node.board.get())
-        next_board.do_move_sequence(move_sequence_made,node.player)
+        next_board.set(parent.board.get())
+        next_board.do_move_sequence(movesequence,parent.player)
 
         child = A0Node(
                 board           = next_board,
-                player          = -node.player,
-                parent          = node,
-                movesequence    = move_sequence_made,
+                player          = -parent.player,
+                parent          = parent,
+                movesequence    = movesequence,
             )
-        
-        child.untried_moves = next_board.get_legal_movesequences(child.player)
 
-        node.children[id(child)] = child
+        c_key = tuple(movesequence)
+        parent.children[c_key] = child
         return child
 
     def _simulate(self, node: A0Node) -> float:
         winner = node.board.get_winner()
         if not winner == 0:
             return 1 if winner == node.player else -1
-        return  self._evaluation(node.board, node.player)
+        return node.get_val_init_pri(self.model) # returns value for newly expanded node
 
     def _backpropagate(self, node: A0Node, v: float):
-        while node:
-            node.backup(v)
+        while node.parent:
             v=-v
+
+            node.parent.backup(node.movesequence,v)
             node=node.parent
 
-    def _evaluation(self,board:Board,player):
-        return self._rollout(board,player)
+    def get_rollout(self):
+        pol = np.zeros(127)
+        root = self.root
+        total = 0
+        for ms in root.legal_movesequences:
+            c_key = tuple(ms)
+            n = root.child_visits[c_key]
+            total += n
 
-    def _rollout(self,board,player):
-        def rollout(board,player):
-            results = np.empty(self.rollouts, dtype=np.int8)
-            arr = board.get()
-            b = Board()
-            for i in range(self.rollouts):
-                b.set(arr)
-                depth = 0
-                player_turn = player
-                turns = 0
-                while True:
-                    turns+=1
-                    legal_ms = b.get_legal_movesequences(player_turn)
-                    ms = self.choice(legal_ms)
-                    b.do_move_sequence(ms, player_turn)
+            p_ms  = A0Node._flip_movesequence(ms,root.player)
+            p_key = A0Node._movesequence_to_idx(p_ms)
+            pol[p_key] = n
+        pol = pol/total
 
-                    depth += 1
-                    if not (b.get_winner() == 0) or depth == self.max_depth:
-                        if b.get_winner() == 0:
-                            results[i] = 0
-                        else:
-                            if b.get_winner() == player:
-                                results[i] = 1
-                            else:
-                                results[i] = -1
-                        break
-                    
-                    player_turn = -player_turn
-            return results
-
-        results = rollout(board,player)
-        win_rate = np.mean(results == 1)
-        return win_rate
+        return pol

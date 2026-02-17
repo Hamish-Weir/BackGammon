@@ -136,7 +136,7 @@ class MCTSAgent(AgentBase):
         winner = node.board.get_winner()
         if not winner == 0:
             return 1 if winner == node.player else -1
-        return  self._evaluation(node.board, node.player)
+        return  0 # self._evaluation(node.board, node.player)
 
     def _backpropagate(self, node: MCTSNode, v: float):
         while node:

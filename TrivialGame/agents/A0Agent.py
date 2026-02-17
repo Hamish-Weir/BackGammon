@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 import random
 from typing import Dict, Optional
@@ -17,23 +17,20 @@ class A0Node:
     board: Board
     player: int
 
-    parent: Optional[A0Node] = None
-    movesequence: Optional[list] = None
-
-    legal_movesequences: Optional[list[list]] = None
+    parent: Optional[A0Node]                    = None
+    movesequence: Optional[list]                = None
+    legal_movesequences: Optional[list[list]]   = None
     
-    children: dict[tuple, A0Node | None] = {}
-    child_prior: Dict[tuple, float]  = {}
-
-    child_visits: Dict[tuple, int] = {}
-    child_total_value: Dict[tuple, float]  = {}
-    child_value: Dict[tuple, float]  = {}
+    children:           Dict[tuple, A0Node | None]  = field(default_factory=dict)
+    child_prior:        Dict[tuple, float]          = field(default_factory=dict)
+    child_visits:       Dict[tuple, int]            = field(default_factory=dict)
+    child_total_value:  Dict[tuple, float]          = field(default_factory=dict)
+    child_value:        Dict[tuple, float]          = field(default_factory=dict)
     
     def __init__(
         self,
         board: Board,
         player: int,
-        model,
         parent: Optional[A0Node] = None,
         movesequence: Optional[list] = None
     ):
@@ -43,7 +40,6 @@ class A0Node:
         self.movesequence = movesequence
         
         self.legal_movesequences = self.board.get_legal_movesequences(self.player)
-        self.init_val_and_pri(model)
 
     def best_child(self, exploration: float = 1.4) -> (Optional[A0Node], A0Node): # type: ignore
         best_move_sequence = None
@@ -69,14 +65,30 @@ class A0Node:
         return best_child, self
     
     def backup(self, move_sequence, v):
-        self.child_visits[move_sequence] = self.child_visits.get(move_sequence,0) + 1
-        self.total_value += v
-        self.value = self.total_value/self.visits
+        c_key = tuple(move_sequence)
 
-    def init_val_and_pri(self,model):
+        total_visits = self.child_visits.get(c_key,0) + 1
+        total_value  = self.child_total_value.get(c_key,0.0) + v
 
-        # model[]
+        self.child_visits[c_key] = total_visits
+        self.child_total_value[c_key] = total_value
+        self.value = total_value/total_visits
+
+    def init_val_and_pri(self,model:A0Network):
+        state_tensor = self.encode_board()
+        value, policy = model[state_tensor]
+        
         pass
+
+    def encode_board(self):
+        board_arr = self.board._tiles
+        
+        if self.player == 1:
+            player_board = board_arr[::1].copy()
+        else:
+            player_board = -board_arr[::-1].copy()
+
+        return torch.tensor(player_board)
 
 
     def __str__(self):

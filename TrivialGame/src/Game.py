@@ -60,6 +60,7 @@ class Game:
     def board(self):
         return self._board
 
+    @staticmethod
     def m_to_str(m,player):
         if m[0] == P1BAR or m[0] == P2BAR:
                 s = "BAR"
@@ -74,6 +75,7 @@ class Game:
         m_str = str(f"({s}, {e}, {m[1]}), ")
         return m_str
 
+    @staticmethod
     def ms_to_str(ms,player):
         ms_str = "["
         for m in ms:

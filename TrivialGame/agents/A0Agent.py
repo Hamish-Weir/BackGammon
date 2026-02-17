@@ -77,7 +77,7 @@ class A0Node:
         self.value = total_value/total_visits
 
     @staticmethod
-    def movesequence_to_idx(self,movesequence):
+    def _movesequence_to_idx(movesequence):
         # Note: Function is Bar position dependent 
         L = len(movesequence)
         if L == 2:
@@ -115,7 +115,7 @@ class A0Node:
             return 126              # 126 (Skip Move)
 
     @staticmethod
-    def flip_movesequence(movesequence, player):
+    def _flip_movesequence(movesequence, player):
         """
         Converts MS (in perspective p1) 
         to perspective of 'player'
@@ -131,27 +131,28 @@ class A0Node:
 
         return pms
 
-    def raw_policy_to_policy_dict(self,policy):
+    def _raw_policy_to_policy_dict(self,policy):
         policy_dict = {}
         for ms in self.legal_movesequences:
             c_key = tuple(ms)
-            p_ms = self.flip_movesequence(ms,self.player)
-            idx = self.movesequence_to_idx(p_ms)
+            p_ms = self._flip_movesequence(ms,self.player)
+            idx = self._movesequence_to_idx(p_ms)
             policy_dict[c_key] = policy[idx]
         return policy_dict
 
-
-    def init_val_and_pri(self,model:A0Network):
+    def get_val_init_pri(self,model:A0Network):
         state_tensor = self.encode_board()
-        val, pol = model[state_tensor]
+
+        model.eval()
+        with torch.inference_mode():
+            val, pol = model[state_tensor]
         
         value = val.item()
         policy = pol.squeeze(0).detach().cpu().numpy()
         
-        self.child_prior = self.raw_policy_to_policy_dict(policy) # Initialize child priors
+        self.child_prior = self._raw_policy_to_policy_dict(policy) # Initialize child priors
 
         return value
-
 
     def encode_board(self):
         board_arr = self.board._tiles
@@ -200,18 +201,35 @@ class A0Agent(AgentBase):
         player, 
         simulations = 200,
         c_puct = 1,
-        rollouts = 100,
-        max_depth = 20,
+        model_path = "models/best_model.pth",
+        training_param = None
     ):
         super().__init__(player)
         self.simulations = simulations
         self.c_puct= c_puct
         self.root = None
-        self.rollouts = rollouts
-        self.max_depth = max_depth
-        self.choice = random.choice
 
-    def make_move(self, board: Board, opp_move):
+        self.model_path = model_path
+        self.model = A0Network()
+
+        try:
+            if model_path:
+                self.model.load_state_dict(torch.load(model_path,weights_only=True))
+        except Exception:
+            print("Model not Found; Initialized with Random Weights")
+
+
+        if training_param:
+            self.dirichlet_alpha = training_param[0]
+            self.dirichlet_epsilon = training_param[1]
+            self.temperature_ply = training_param[2]
+            self.training = True
+        else:
+            self.training = False
+
+        
+
+    def make_move(self, board: Board, turn = 0, opp_move = None):
         """Makes a move based on the current board state."""
 
         root_board = Board()

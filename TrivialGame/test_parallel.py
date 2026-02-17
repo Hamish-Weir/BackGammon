@@ -41,7 +41,7 @@ def play_game(p):
             currentPlayer: Player = players[current_player]
             playerAgent = currentPlayer.agent
 
-            ms = playerAgent.make_move(board, opponentMove)
+            ms = playerAgent.make_move(board, turn, opponentMove)
 
             board.do_move_sequence(ms,current_player)
             opponentMove = ms

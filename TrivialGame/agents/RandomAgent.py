@@ -7,7 +7,7 @@ class RandomAgent(AgentBase):
         super().__init__(player)
         self.choice = choice
 
-    def make_move(self, board: Board, opp_move):
+    def make_move(self, board: Board, turn = 0, opp_move = None):
         """Makes a move based on the current board state."""
         
         legal = board.get_legal_movesequences(self.player)

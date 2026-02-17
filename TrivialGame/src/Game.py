@@ -114,7 +114,7 @@ class Game:
             self._player_board.set(self.board.get())
 
             start = time()
-            ms = playerAgent.make_move(self._player_board, opponentMove)
+            ms = playerAgent.make_move(self._player_board, self.turn, opponentMove)
             end = time()
 
             if not self._player_board == self._board:

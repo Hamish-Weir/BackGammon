@@ -115,7 +115,7 @@ class A0Node:
             return 126              # 126 (Skip Move)
 
     @staticmethod
-    def perspective_movesequence(movesequence, player):
+    def flip_movesequence(movesequence, player):
         """
         Converts MS (in perspective p1) 
         to perspective of 'player'
@@ -133,10 +133,12 @@ class A0Node:
 
     def raw_policy_to_policy_dict(self,policy):
         policy_dict = {}
-        for movesequence in self.legal_movesequences:
-            c_key = tuple(movesequence)
-            idx = self.movesequence_to_idx(movesequence)
+        for ms in self.legal_movesequences:
+            c_key = tuple(ms)
+            p_ms = self.flip_movesequence(ms,self.player)
+            idx = self.movesequence_to_idx(p_ms)
             policy_dict[c_key] = policy[idx]
+        return policy_dict
 
 
     def init_val_and_pri(self,model:A0Network):
@@ -146,6 +148,9 @@ class A0Node:
         value = val.item()
         policy = pol.squeeze(0).detach().cpu().numpy()
         
+        self.child_prior = self.raw_policy_to_policy_dict(policy) # Initialize child priors
+
+        return value
 
 
     def encode_board(self):

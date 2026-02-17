@@ -10,7 +10,7 @@ import torch
 
 from networks.A0Network import A0Network
 from src.AgentBase import AgentBase
-from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, P1BAR, P1OFF, P2BAR, P2OFF, Board
+from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, GAME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, Board
 
 n = BOARD_SIZE+1
 
@@ -76,6 +76,7 @@ class A0Node:
         self.child_total_value[c_key] = total_value
         self.value = total_value/total_visits
 
+    @staticmethod
     def movesequence_to_idx(self,movesequence):
         # Note: Function is Bar position dependent 
         L = len(movesequence)
@@ -113,6 +114,22 @@ class A0Node:
         else:
             return 126              # 126 (Skip Move)
 
+    @staticmethod
+    def perspective_movesequence(movesequence, player):
+        """
+        Converts MS (in perspective p1) 
+        to perspective of 'player'
+        """
+        if player == 1:
+            return movesequence
+        
+        pms = []
+        for move in movesequence:
+            s,d = move
+            ps = (GAME_SIZE - 1) - s
+            pms.append((ps,d))
+
+        return pms
 
     def raw_policy_to_policy_dict(self,policy):
         policy_dict = {}

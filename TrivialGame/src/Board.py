@@ -222,8 +222,8 @@ class Board():
 
         def my_sort(movesequence,player):
             if player == 1:
-                return sorted(movesequence, key=lambda x: (x[0],x[1]))
-            return sorted(movesequence, key=lambda x: (-x[0],x[1]))
+                return sorted(movesequence, key=lambda x: (x[0]))
+            return sorted(movesequence, key=lambda x: (-x[0]))
 
         moveSequenceSet = set()
         moveSequenceList = []
@@ -244,6 +244,16 @@ class Board():
                                 for m2 in M2:
                                     ms = [m1,m2]
                                     ms = my_sort(ms,player)
+
+                                    if player == 1 and ms[0][0] > ms[1][0]:
+                                        print([m1,m2])
+                                        print(ms)
+                                        raise
+                                    if player == -1 and ms[0][0] < ms[1][0]:
+                                        print([m1,m2])
+                                        print(ms)
+                                        raise
+
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
@@ -268,6 +278,16 @@ class Board():
                                 for m2 in M2:
                                     ms = [m1,m2]
                                     ms = my_sort(ms,player)
+
+                                    if player == 1 and ms[0][0] > ms[1][0]:
+                                        print([m1,m2])
+                                        print(ms)
+                                        raise
+                                    if player == -1 and ms[0][0] < ms[1][0]:
+                                        print([m1,m2])
+                                        print(ms)
+                                        raise
+
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
@@ -310,9 +330,9 @@ class Board():
 
 
         if player == 1:
-            return sorted(moveSequenceList,key=lambda sublist: [(a, b) for (a, b) in sublist])
+            return sorted(moveSequenceList,key=lambda sublist: [(b, a) for (a, b) in sublist])
         else:
-            return sorted(moveSequenceList,key=lambda sublist: [(-a, b) for (a, b) in sublist])
+            return sorted(moveSequenceList,key=lambda sublist: [(b, -a) for (a, b) in sublist])
 
     def do_move(self,move,player):
         if move:

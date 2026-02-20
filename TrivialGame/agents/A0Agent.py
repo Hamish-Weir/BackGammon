@@ -91,10 +91,10 @@ class A0Node:
             m1,m2 = movesequence[0], movesequence[1]
             s1,d1 = m1
             s2,d2 = m2
-            assert s1<=s2
+            assert s1<=s2, f"{m1}, {m2}"
             
-            s1id = s1 - BOARD_START + 1 # s1 -> [0..6]
-            s2id = s2 - BOARD_START + 1 # s2 -> [0..6]
+            s1id = s1 - BOARD_START+1 # s1 -> [0..6]
+            s2id = s2 - BOARD_START+1 # s2 -> [0..6]
             eq = (((s1id) * ((n+(n-(s1id-1)))))//2) + (s2id-s1id)
 
             match (d1,d2):
@@ -111,7 +111,7 @@ class A0Node:
             m1 = movesequence[0]
             s1,d1 = m1
 
-            s1id = s1 - BOARD_START + 1 # s1 -> [0..6]
+            s1id = s1 - BOARD_START+1 # s1 -> [0..6]
 
             match d1:
                 case 1:
@@ -316,9 +316,11 @@ class A0Agent(AgentBase):
             c_key = tuple(ms)
             n = root.child_visits[c_key]
             total += n
-
+            print(ms)
             p_ms  = A0Node._flip_movesequence(ms,root.player)
+            print(p_ms)
             p_key = A0Node._movesequence_to_idx(p_ms)
+            print(p_key)
             pol[p_key] = n
         pol = pol/total
 

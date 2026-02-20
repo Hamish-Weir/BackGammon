@@ -220,7 +220,10 @@ class Board():
     
     def get_legal_movesequences(self,player):
 
-        reversed_order = False if player == 1 else True
+        def my_sort(movesequence,player):
+            if player == 1:
+                return sorted(movesequence, key=lambda x: (x[0],x[1]))
+            return sorted(movesequence, key=lambda x: (-x[0],x[1]))
 
         moveSequenceSet = set()
         moveSequenceList = []
@@ -240,14 +243,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
-                                    ms = sorted(ms,reverse=reversed_order)
+                                    ms = my_sort(ms,player)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
-                                ms = sorted(ms,reverse=reversed_order)
+                                ms = my_sort(ms,player)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -264,14 +267,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
-                                    ms = sorted(ms,reverse=reversed_order)
+                                    ms = my_sort(ms,player)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
-                                ms = sorted(ms,reverse=reversed_order)
+                                ms = my_sort(ms,player)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -287,14 +290,14 @@ class Board():
                             if M2:
                                 for m2 in M2:
                                     ms = [m1,m2]
-                                    ms = sorted(ms,reverse=reversed_order)
+                                    ms = my_sort(ms,player)
                                     tms = tuple(ms)
                                     if not(tms in moveSequenceSet):
                                         moveSequenceSet.add(tms)
                                         moveSequenceList.append(ms)
                             else:
                                 ms = [m1]
-                                ms = sorted(ms,reverse=reversed_order)
+                                ms = my_sort(ms,player)
                                 tms = tuple(ms)
                                 if not(tms in moveSequenceSet):
                                     moveSequenceSet.add(tms)
@@ -306,8 +309,10 @@ class Board():
                 moveSequenceList.append([])
 
 
-        
-        return moveSequenceList
+        if player == 1:
+            return sorted(moveSequenceList,key=lambda sublist: [(a, b) for (a, b) in sublist])
+        else:
+            return sorted(moveSequenceList,key=lambda sublist: [(-a, b) for (a, b) in sublist])
 
     def do_move(self,move,player):
         if move:

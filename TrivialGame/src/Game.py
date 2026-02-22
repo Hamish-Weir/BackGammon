@@ -16,6 +16,7 @@ logging.basicConfig(
 
 class Game:
     _turn:int
+    MAXIMUM_TIME = 5 * 60 *(10**9)
 
     def __init__(
         self,
@@ -125,10 +126,11 @@ class Game:
             logger.debug(
                 f"Player {currentPlayer.name}; Move time: {Game.ns_to_s(currentPlayer.move_time)}s"
             )
-            logger.info(f"Player {currentPlayer.name}; Move Sequence: {self.current_player}\n{Game.ms_to_str(ms,self.current_player)}")
+            logger.info(f"Player: {currentPlayer.name}; Move Sequence: {Game.ms_to_str(ms,self.current_player)}")
+
             if not self.timelimitOff:
                 if currentPlayer.move_time > Game.MAXIMUM_TIME:
-                    logger.info(f"Player {currentPlayer.name} timed out")
+                    logger.info(f"Player {currentPlayer.name} timed out ({currentPlayer.move_time})")
                     raise Exception("Player Timed Out")
             
             if self.is_valid_move_sequence(ms):
@@ -138,6 +140,7 @@ class Game:
             else:
                 logger.info(f"Player {currentPlayer.name} made an illegal move")
                 raise Exception("Illegal Move")
+            
             if self.board.get_winner() != 0:
                 break
 
@@ -174,11 +177,6 @@ class Game:
 
         self.board.do_move_sequence(ms,self.current_player)
 
-        print(current_player)
-        print(
-            f"{self.turn},{current_player.name},{self.current_player},{ms},{current_player.move_time}",
-            file=self.logDest,
-        )
 
   
 

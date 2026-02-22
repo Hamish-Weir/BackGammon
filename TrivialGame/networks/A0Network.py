@@ -108,7 +108,6 @@ class A0Network(nn.Module):
         p = self.relu(p)                        # (3)
         p = p.view(p.size(0), -1)               # flatten
         policy_logits = self.policy_fc(p)       # (4)
-        policy = F.softmax(policy_logits, dim=1)
 
         # Value head
         v = self.value_conv(trunk)  # (1)
@@ -120,7 +119,7 @@ class A0Network(nn.Module):
         v = self.value_fc2(v)       # (6)
         v = torch.tanh(v)           # (7)
 
-        return v, policy
+        return v, policy_logits
 
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)

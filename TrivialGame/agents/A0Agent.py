@@ -139,37 +139,48 @@ class A0Node:
         return pms
 
     def _raw_policy_to_policy_dict(self,policy):
+
         policy_dict = {}
+        legal_logits = []
+
+        # Collect logits for legal moves
         for ms in self.legal_movesequences:
             c_key = tuple(ms)
-            p_ms = self._flip_movesequence(ms,self.player)
+            p_ms = self._flip_movesequence(ms, self.player)
             idx = self._movesequence_to_idx(p_ms)
-            policy_dict[c_key] = policy[idx]
+            logit = policy[idx]
+            policy_dict[c_key] = logit
+            legal_logits.append(logit)
 
-        total = sum(policy_dict.values())
-        policy_dict = {k: v / total for k, v in policy_dict.items()}
+        # Convert legal logits to probabilities using softmax
+        legal_logits_tensor = torch.tensor(legal_logits, dtype=torch.float32)
+        probs = torch.softmax(legal_logits_tensor, dim=0)
+
+        # Assign probabilities back to dictionary
+        for i, key in enumerate(policy_dict.keys()):
+            policy_dict[key] = probs[i].item()
 
         return policy_dict
 
     def get_val_init_pri(self,model:A0Network):
-        state_tensor = self.encode_board()
+        state_tensor = self.encode_board(self.board,self.player)
 
         model.eval()
         with torch.inference_mode():
             val, pol = model(state_tensor)
         
         value = val.item()
-        policy = torch.softmax(pol, dim=-1).squeeze(0).cpu().numpy()
-        
+        policy = pol.squeeze(0).cpu().numpy()
 
         self.child_prior = self._raw_policy_to_policy_dict(policy) # Initialize child priors
 
         return value
 
-    def encode_board(self):
-        board_arr = self.board._tiles
+    @staticmethod
+    def encode_board(board,player):
+        board_arr = board._tiles
         
-        if self.player == 1:
+        if player == 1:
             player_board = board_arr[::1].copy()
         else:
             player_board = -board_arr[::-1].copy()
@@ -212,12 +223,17 @@ class A0Node:
         return m_str
 
 class A0Agent(AgentBase):
+
     def __init__(self, 
         player, 
-        model_path = "TrivialGame/models/best_model.pth",
+        model_path = "models/best_model.pth",
         simulations = 800,
         c_puct = 1,
-        training_param = None
+        training_on = False,
+        dirichlet_alpha = 0.00, # 0.03
+        dirichlet_epsilon = 0.00, # 0.25
+        temperature = 0,    # 1
+        temperature_ply = 0, # 4?
     ):
         super().__init__(player)
         
@@ -229,26 +245,23 @@ class A0Agent(AgentBase):
         self.c_puct= c_puct
         self.root = None
 
-        if training_param:
-            self.dirichlet_alpha = training_param[0]
-            self.dirichlet_epsilon = training_param[1]
-            self.temperature_ply = training_param[2]
-            self.training = True
-        else:
-            self.training = False
+        # training param
+        self.training_on = training_on
+        self.dirichlet_alpha = dirichlet_alpha
+        self.dirichlet_epsilon = dirichlet_epsilon
+        self.temperature = temperature
+        self.temperature_ply = temperature_ply
 
         try:
             if model_path:
                 self.model.load_state_dict(torch.load(model_path,weights_only=True))
+            else:
+                raise Exception("No Model path Provided")
         except Exception:
-            if self.training:
+            if self.training_on:
                 print("Model not Found; Initialized with Random Weights")
             else:
                 raise Exception(f"Model Not Found ({model_path})")
-
-
-
-        
 
     def make_move(self, board: Board, turn = 0, opp_move = None):
         """Makes a move based on the current board state."""
@@ -259,7 +272,10 @@ class A0Agent(AgentBase):
         self.root = A0Node(board=root_board, player=self.player)
         self.root.get_val_init_pri(self.model)
 
-        for i in range(self.simulations):
+        if self.training_on and turn < self.temperature_ply:
+            self._add_noise_to_root()
+
+        for _ in range(self.simulations):
             node = self._select(self.root)
             v = self._simulate(node)
             self._backpropagate(node, v)
@@ -307,6 +323,38 @@ class A0Agent(AgentBase):
 
             node.parent.backup(node.movesequence,v)
             node=node.parent
+    
+    def _add_noise_to_root(self):
+
+        root = self.root
+
+        L = len(root.legal_movesequences)
+
+        orig_probs = np.array([root.child_prior.get(tuple(m), 0.0) for m in root.legal_movesequences])
+        # normalize just in case
+        s = orig_probs.sum()
+        if s <= 0:
+            # fallback uniform
+            orig_probs = np.ones_like(orig_probs) / L
+        else:
+            orig_probs = orig_probs / s
+
+        # sample dirichlet noise
+        if self.dirichlet_alpha > 0:
+            noise = np.random.dirichlet([self.dirichlet_alpha] * L)
+            mixed = (1 - self.dirichlet_epsilon) * orig_probs + self.dirichlet_epsilon * noise
+        else:
+            # dirichlet_alpha = 0 -> no noise
+            mixed = orig_probs
+
+        # write back into node.P for the legal moves
+        for m, p in zip(root.legal_movesequences, mixed):
+            root.child_prior[tuple(m)] = np.float32(p)
+
+        # ensure normalization
+        s2 = sum(root.child_prior.values())
+        for k in root.child_prior:
+            root.child_prior[k] = root.child_prior[k] / s2
 
     def get_rollout(self):
         pol = np.zeros(127)
@@ -316,11 +364,8 @@ class A0Agent(AgentBase):
             c_key = tuple(ms)
             n = root.child_visits[c_key]
             total += n
-            print(ms)
             p_ms  = A0Node._flip_movesequence(ms,root.player)
-            print(p_ms)
             p_key = A0Node._movesequence_to_idx(p_ms)
-            print(p_key)
             pol[p_key] = n
         pol = pol/total
 

@@ -230,8 +230,8 @@ class A0Agent(AgentBase):
         simulations = 800,
         c_puct = 1,
         training_on = False,
-        dirichlet_alpha = 0.00, # 0.03
-        dirichlet_epsilon = 0.00, # 0.25
+        dirichlet_alpha = 0.03, # 0.03
+        dirichlet_epsilon = 0.25, # 0.25
         temperature = 0,    # 1
         temperature_ply = 0, # 4?
     ):
@@ -362,7 +362,7 @@ class A0Agent(AgentBase):
         total = 0
         for ms in root.legal_movesequences:
             c_key = tuple(ms)
-            n = root.child_visits[c_key]
+            n = root.child_visits.get(c_key,0)
             total += n
             p_ms  = A0Node._flip_movesequence(ms,root.player)
             p_key = A0Node._movesequence_to_idx(p_ms)

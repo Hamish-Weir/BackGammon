@@ -227,7 +227,7 @@ class A0Agent(AgentBase):
     def __init__(self, 
         player, 
         model_path = "models/best_model.pth",
-        simulations = 800,
+        simulations = 1600,
         c_puct = 1,
         training_on = False,
         dirichlet_alpha = 0.03, # 0.03

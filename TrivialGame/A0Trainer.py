@@ -21,19 +21,19 @@ MAX_GAME_LENGTH = 20
 BEST_MODEL_PATH = "models/best_model.pth"
 TEMP_MODEL_PATH = "models/temp_model.pth"
 
-TRAIN_SIMS = 600
+TRAIN_SIMS = 1600
 TRAIN_GAMES = 50
 TRAIN_C_PUCT = 1
-TRAIN_DIRICHLET_ALPHA = 0
-TRAIN_DIRICHLET_EPSILON = 0
+TRAIN_DIRICHLET_ALPHA = 0.1
+TRAIN_DIRICHLET_EPSILON = 0.25
 TRAIN_TEMPERATURE = 0
 TRAIN_TEMPREATURE_PLY = 0
 
-EVAL_SIMS = 1000
+EVAL_SIMS = 2000
 EVAL_GAMES = 50
 EVAL_C_PUCT = 1
-EVAL_DIRICHLET_ALPHA = 0
-EVAL_DIRICHLET_EPSILON = 0
+EVAL_DIRICHLET_ALPHA = 0.1
+EVAL_DIRICHLET_EPSILON = 0.25
 EVAL_TEMPERATURE = 0
 EVAL_TEMPREATURE_PLY = 0
 
@@ -179,13 +179,14 @@ class A0Trainer:
     def _evaluate_step(self):
         torch.save(self.temp_model.state_dict(), self.temp_model_path)
 
-        winrate = eval_play_game()
+        # Red_winrate, Blue_winrate = evaluation_games(self.best_model_path,self.temp_model_path)
+        # print(f"(Red win rate = {Red_winrate}), (Blue win rate = {Blue_winrate})")
 
-        if winrate > 0.55:
-            torch.save(self.temp_model.state_dict(), self.best_model_path)
-            print(f"New model saved (Winrate = {winrate})")
-        else:
-            print(f"New model discarded (Winrate = {winrate})")
+        # if winrate > 0.55:
+        torch.save(self.temp_model.state_dict(), self.best_model_path)
+        print(f"New model saved")
+        # else:
+        #     print(f"New model discarded (Winrate = {winrate})")
 
     def _load_deque(self):
         """Safely load a deque"""
@@ -219,6 +220,8 @@ class A0Trainer:
     def _show_progress(self):
         print()
 
+        self.best_model.load_state_dict(torch.load(self.best_model_path))
+
         b = Board()
 
         n = A0Node(b,1)
@@ -232,9 +235,6 @@ class A0Trainer:
 
         v = v.item()
         p = p.squeeze(0).cpu().numpy()
-
-        print(v)
-        print(p)
 
         p_dic = n._raw_policy_to_policy_dict(p)
 
@@ -299,7 +299,13 @@ def self_play_game(
         winner = board.get_winner() # win, loss, or turn out
 
         for i, (s, p, pl) in enumerate(game_history):
-            value = 1 if pl == winner else -1
+            if pl == winner:
+                value = 1 
+            elif -pl == winner:
+                value = -1
+            else:
+                value = 0
+
             game_history[i] = (s, p, value)
 
         return game_history
@@ -324,12 +330,12 @@ def eval_play_game(
         temp_ply=EVAL_TEMPREATURE_PLY,
 ):
     try:
-        if parity%2 == 0:
-            agent1=A0Agent(1,best_model_path,simulations,c_puct,True,dir_a,dir_e,temp,temp_ply)
-            agent2=A0Agent(-1,temp_model_path,simulations,c_puct,True,dir_a,dir_e,temp,temp_ply) # New as Blue
-        else:
+        if parity == 0:
             agent1=A0Agent(1,temp_model_path,simulations,c_puct,True,dir_a,dir_e,temp,temp_ply) # New as Red
             agent2=A0Agent(-1,best_model_path,simulations,c_puct,True,dir_a,dir_e,temp,temp_ply)
+        else:
+            agent1=A0Agent(1,best_model_path,simulations,c_puct,True,dir_a,dir_e,temp,temp_ply)
+            agent2=A0Agent(-1,temp_model_path,simulations,c_puct,True,dir_a,dir_e,temp,temp_ply) # New as Blue
 
         players = {
             1: agent1,
@@ -358,9 +364,9 @@ def eval_play_game(
         
         winner = board.get_winner() # win, loss, or turn out
 
-        if winner == -1 and parity%2 == 0:
+        if winner == 1 and parity == 0:
             return 1
-        elif winner == 1 and parity%2 == 1:
+        elif winner == -1 and parity == 1:
             return 1
         else:
             return -1
@@ -401,23 +407,52 @@ def evaluation_games(best_model_path,temp_model_path):
     # explicit multiprocessing context 
     ctx = mp.get_context("spawn")
 
-    wins = 0
+    Red_Wins = 0
+    Blue_Wins = 0
 
     with ProcessPoolExecutor(max_workers=CPU_COUNT, mp_context=ctx, initializer=worker_init) as ex:
-        futures = [ex.submit(eval_play_game,i,best_model_path,temp_model_path) for i in range(TRAIN_GAMES)]
+        futures = [ex.submit(eval_play_game,0,best_model_path,temp_model_path) for i in range(EVAL_GAMES//2)]
         for future in as_completed(futures):
             # If a worker raised, .result() will re-raise that exception here.
             winner = future.result()
             if winner == 1:
-                wins+=1
+                Red_Wins += 1
 
-    winrate = wins/TRAIN_GAMES
+    with ProcessPoolExecutor(max_workers=CPU_COUNT, mp_context=ctx, initializer=worker_init) as ex:
+        futures = [ex.submit(eval_play_game,1,best_model_path,temp_model_path) for i in range(EVAL_GAMES//2)]
+        for future in as_completed(futures):
+            # If a worker raised, .result() will re-raise that exception here.
+            winner = future.result()
+            if winner == 1:
+                Blue_Wins+=1
 
-    return winrate
+    R_winrate = Red_Wins/(TRAIN_GAMES//2)
+    B_winrate = Blue_Wins/(TRAIN_GAMES//2)
+
+    return R_winrate,B_winrate
+
+def play_finish_sound():
+    import sounddevice as sd
+
+    sample_rate = 44100
+
+    t1 = np.linspace(0, 0.4, int(sample_rate * 0.4), False)
+    tone1 = np.sin(2 * np.pi * 1000 * t1)
+
+    t2 = np.linspace(0, 0.5, int(sample_rate * 0.5), False)
+    tone2 = np.sin(2 * np.pi * 2000 * t2)
+
+    tone = np.concatenate([tone1, tone2,tone1, tone2,tone1, tone2,tone1, tone2])
+
+    sd.play(tone, sample_rate)
+    sd.wait()
 
 if __name__ == '__main__':
     print(f"Start Time: {datetime.now()}")
     
     trainer = A0Trainer()
 
-    trainer.train(iterations=1)
+    trainer.train(iterations=20)
+
+    play_finish_sound()
+# 14:17:42

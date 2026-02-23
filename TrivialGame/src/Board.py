@@ -330,9 +330,9 @@ class Board():
 
 
         if player == 1:
-            return sorted(moveSequenceList,key=lambda sublist: [(b, a) for (a, b) in sublist])
+            return sorted(moveSequenceList,key=lambda sublist: [(-b, a) for (a, b) in sublist])
         else:
-            return sorted(moveSequenceList,key=lambda sublist: [(b, -a) for (a, b) in sublist])
+            return sorted(moveSequenceList,key=lambda sublist: [(-b, -a) for (a, b) in sublist])
 
     def do_move(self,move,player):
         if move:

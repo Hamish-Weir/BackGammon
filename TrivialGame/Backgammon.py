@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-p1",
         "--player1",
-        default="agents.RandomAgent RandomAgent",
+        default="agents.A0Agent A0Agent",
         type=str,
         help="Specify the player 1 agent, format: agents.AgentFile AgentClassName",
     )

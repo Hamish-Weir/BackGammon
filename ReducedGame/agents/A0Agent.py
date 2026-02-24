@@ -10,9 +10,7 @@ import torch
 
 from networks.A0Network import A0Network
 from src.AgentBase import AgentBase
-from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, GAME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, Board
-
-n = BOARD_SIZE+1
+from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, PRIOR_ONE_SIZE, PRIOR_ONE_SUB_SIZE, PRIOR_TWO_SIZE, PRIOR_TWO_SUB_SIZE, Board
 
 @dataclass
 class A0Node:
@@ -86,40 +84,45 @@ class A0Node:
     @staticmethod
     def _movesequence_to_idx(movesequence):
         # Note: Function is Bar position dependent 
+            
+        def dice_to_idx(die1 = None, die2 = None):
+            if die1 and die2:
+                d1 = die1-1
+                d2 = die2-1
+                ds = DIE_SIZE*d1 + d2
+                return ds
+            if die1:
+                return die1-1
+            else:
+                return 0
+
         L = len(movesequence)
+
         if L == 2:
             m1,m2 = movesequence[0], movesequence[1]
             s1,d1 = m1
             s2,d2 = m2
-            assert s1<=s2, f"{m1}, {m2}"
+
+            s1id = s1 - BOARD_START + 1 # s1 -> [0..BOARD_SIZE]
+            s2id = s2 - BOARD_START + 1 # s2 -> [0..BOARD_SIZE]
             
-            s1id = s1 - BOARD_START+1 # s1 -> [0..6]
-            s2id = s2 - BOARD_START+1 # s2 -> [0..6]
-            eq = (((s1id) * ((n+(n-(s1id-1)))))//2) + (s2id-s1id)
+            sp1 = (((s1id) * (((BOARD_SIZE+1)+((BOARD_SIZE+1)-(s1id-1)))))//2)
+            sp2 = (s2id-s1id)
 
-            match (d1,d2):
-                case (1,1):
-                    return 0 + eq   # 0-27
-                case (1,2):
-                    return 28 + eq  # 28-55
-                case (2,1):
-                    return 56 + eq  # 56-83
-                case (2,2):
-                    return 84 + eq  # 84-111
-        elif L == 1:
+            subpart =  sp1 + sp2
+            part = dice_to_idx(d1,d2)
 
+            return part * PRIOR_TWO_SUB_SIZE + subpart
+        
+        if L == 1:
             m1 = movesequence[0]
             s1,d1 = m1
 
-            s1id = s1 - BOARD_START+1 # s1 -> [0..6]
+            s1id = s1 - BOARD_START+1 # s1 -> [0..BOARD_SIZE]
 
-            match d1:
-                case 1:
-                    return 112 + s1id # 112-118
-                case 2:
-                    return 119 + s1id # 119-125
-        else:
-            return 126              # 126 (Skip Move)
+            return PRIOR_TWO_SIZE + (PRIOR_ONE_SUB_SIZE*dice_to_idx(d1)) + s1id
+        
+        return PRIOR_TWO_SIZE+PRIOR_ONE_SIZE
 
     @staticmethod
     def _flip_movesequence(movesequence, player):
@@ -226,8 +229,7 @@ class A0Agent(AgentBase):
 
     def __init__(self, 
         player, 
-        # model_path = "models/successful_model.pth",
-        model_path="models/A0Model.pth",
+        model_path=f"models/{BOARD_SIZE}_{DIE_SIZE}_A0Model.pth",
         simulations = 100,
         c_puct = 1,
         training_on = False,
@@ -259,13 +261,9 @@ class A0Agent(AgentBase):
             else:
                 raise Exception("No Model path Provided")
         except Exception:
-            if self.training_on:
-                self.model._initialize_weights()
-                print("Model not Found; Initialized with Random Weights")
-            else:
-                self.model._initialize_weights()
-                # raise Exception(f"Model Not Found ({model_path})")
-                pass
+            self.model._initialize_weights()
+            print("Model not Found; Initialized with Random Weights")
+            torch.save(self.model.state_dict(), self.model_path)
 
         self.choice = random.choices
 

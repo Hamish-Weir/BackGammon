@@ -1,4 +1,9 @@
 # from networks.A0Network import A0Network
+from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
+import os
+
 import torch
 from networks.A0Network import A0Network
 from agents.A0Agent import A0Agent, A0Node
@@ -8,40 +13,83 @@ from src.Board import Board
 
 import time
 import numpy as np
+import sounddevice as sd
+
+boards = [
+    np.array([
+        0,0,
+        2,0,0,0,0,-2,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        2,0,0,-2,0,0,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        0,0,2,-2,0,0,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        0,-2,2,0,0,0,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        0,-2,0,0,2,0,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        1,0,0,0,1,-2,
+        0,0,
+    ]),
+    
+    np.array([
+        0,0,
+        1,0,0,-2,1,0,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        1,-1,0,0,1,-1,
+        0,0,
+    ]),
+
+    np.array([
+        0,0,
+        1,-2,0,0,1,0,
+        0,0,
+    ]),
+]
 
 
+m = A0Network()
+# m._initialize_weights()
+
+m.load_state_dict(torch.load("models/best_model.pth",weights_only=True))
+
+p = 1
 b = Board()
-arr = np.array([
-    0,0,
-    2,0,0,0,0,-2,
-    0,0,
-])
 
-b.set(arr)
-a = A0Agent(
-    1,
-    model_path="models/best_model.pth",
-    simulations=500,
-    c_puct=1)
+for arr in boards:
+    b.set(arr)
 
-ms = a.make_move(b)
+    # n = A0Node(b,p)
+    e = A0Node.encode_board(b,1)
 
-print(a.get_rollout())
+    with torch.inference_mode():
+        v,p = m(e)
 
-C0 = a.root                        
-# # C1 = list(C0.children.values())[3]
-# # C2 = list(C1.children.values())[0]
-# # C3 = list(C2.children.values())[1]
-# # C4 = list(C3.children.values())[1]
+    v = v.item()
+    p = p.squeeze(0).cpu().numpy()
 
-# # C0  1,3:1,3
-# # C1 6,4:6,4
-# # C2 
-
-N = C0
-
-print("Parent:")
-print(N)
-print("Children")
-for i, c in enumerate(N.children.values()):
-    print(f"{i}, {c}",end="")
+    print(v)

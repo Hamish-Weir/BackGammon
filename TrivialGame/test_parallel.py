@@ -1,5 +1,6 @@
 
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
 import os
 import time
 import traceback
@@ -13,18 +14,21 @@ from agents.MCTSAgent import MCTSAgent
 from src.Player import Player
 from src.Board import Board
 
+MAX_TURNS = 20
 
 def play_game(p):
-    # print(f"Process {p:>4d} Started")
+    global MAX_TURNS
+    print(f"Process {p:>8d} Started")
     try:
-        player1 = Player(
-            "P1",
-            A0Agent(1),
-        )
-
         player2 = Player(
             "P1",
-            RandomAgent(-1),
+            A0Agent(-1,"models/best_model.pth",10),
+            
+        )
+
+        player1 = Player(
+            "P2",
+            MCTSAgent(1,2000),
         )
 
         current_player = 1
@@ -47,20 +51,21 @@ def play_game(p):
 
             ms = playerAgent.make_move(board, turn, opponentMove)
 
+
             board.do_move_sequence(ms,current_player)
             opponentMove = ms
             
-            if board.get_winner() != 0:
+            if board.get_winner() != 0 or turn == MAX_TURNS:
                 break
 
             current_player = -current_player
 
-        # print(f"Process {p:>4d} Finished")
+        print(f"Process {p:>8d} Finished")
         return board.get_winner(), turn
     except Exception as e:
         file_name = f"process_error_{os.getpid()}"
 
-        with open("error.log", "a") as f:
+        with open(f"{file_name}.txt", "a") as f:
             f.write(f"PID: {os.getpid()}\n")
             f.write(f"Exception: {str(e)}\n")
             f.write(traceback.format_exc())
@@ -80,9 +85,12 @@ if __name__ == "__main__":
 
     red_wins = 0
     blu_wins = 0
+    turn_outs = 0
 
-    num_games = 50
+    num_games = 1000
 
+
+    print(f"Started at: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
     s = time.time_ns()
     with ProcessPoolExecutor(max_workers=NUM_CORES) as executor:
         futures = [executor.submit(play_game, i) for i in range(num_games)]
@@ -93,12 +101,12 @@ if __name__ == "__main__":
         elif r == -1:
             blu_wins += 1
         else:
-            print(r)
-            print(results)
-            raise
+            turn_outs += 1
     e = time.time_ns()
+    print(f"Ended at: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
     
     print(f"Red Wins: {red_wins}")
     print(f"Blue Wins: {blu_wins}")
+    print(f"Turn Outs: {turn_outs}")
     print(f"Time: {(e-s)/10**9}")
     

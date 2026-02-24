@@ -16,13 +16,13 @@ from src.Board import Board
 from agents.A0Agent import A0Agent, A0Node
 from networks.A0Network import A0Network
 
-MAX_GAME_LENGTH = 20
+MAX_GAME_LENGTH = 10
 
 BEST_MODEL_PATH = "models/best_model.pth"
 TEMP_MODEL_PATH = "models/temp_model.pth"
 
 TRAIN_SIMS = 800
-TRAIN_GAMES = 50
+TRAIN_GAMES = 100
 TRAIN_C_PUCT = 1
 TRAIN_DIRICHLET_ALPHA = 0.1
 TRAIN_DIRICHLET_EPSILON = 0.25
@@ -42,7 +42,7 @@ CPU_COUNT = mp.cpu_count()
 class A0Trainer:
     def __init__(
         self,
-        learning_rate       = 0.005,
+        learning_rate       = 0.002,
         batch_size          = 32,
         num_epochs          = 5,
         device              = None,
@@ -58,7 +58,7 @@ class A0Trainer:
         self.num_epochs     = num_epochs
 
         self.deque_path     = deque_path
-        self.deque_size     = TRAIN_GAMES * 3
+        self.deque_size     = TRAIN_GAMES * 10
         self.game_buffer    = self._load_deque()
 
         if device:
@@ -465,7 +465,7 @@ if __name__ == '__main__':
     
     trainer = A0Trainer()
 
-    trainer.train(iterations=5000)
+    trainer.train(iterations=50)
 
     play_finish_sound()
 

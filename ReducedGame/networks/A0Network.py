@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.Board import BOARD_SIZE
+from src.Board import BOARD_SIZE, PRIOR_SIZE
 
 class ResidualBlock(nn.Module):
     def __init__(self, channels: int):
@@ -37,7 +37,7 @@ class A0Network(nn.Module):
     def __init__(
         self,
         input_size: int = BOARD_SIZE+4,
-        output_size: int = 127,
+        output_size: int = PRIOR_SIZE,
         in_channels: int = 1,
         channels: int = 128,
         num_res_blocks: int = 10,

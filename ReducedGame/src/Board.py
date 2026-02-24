@@ -36,6 +36,14 @@ P2LOGICALBAR = BOARD_END+1
 P1LOGICALOFF = BOARD_END+1
 P2LOGICALOFF = BOARD_START-1
 
+
+PRIOR_TWO_SUB_SIZE = ((BOARD_SIZE+2)*(BOARD_SIZE+1))>>1
+PRIOR_TWO_SIZE =  PRIOR_TWO_SUB_SIZE * DIE_SIZE * DIE_SIZE
+PRIOR_ONE_SUB_SIZE = (BOARD_SIZE+1)
+PRIOR_ONE_SIZE = (PRIOR_ONE_SUB_SIZE*DIE_SIZE)
+PRIOR_NON_SIZE = 1
+PRIOR_SIZE = PRIOR_TWO_SIZE+PRIOR_ONE_SIZE+PRIOR_NON_SIZE
+
 class Board():
 
     # Positive = RED
@@ -44,11 +52,12 @@ class Board():
         self._tiles = np.array([
             0,  0,  # Blue Off, Red Bar
             2,  0,  # Red Home
-            0,  0,
+            0,  0, # 0,  0, 0,  0,
             0, -2,  # Blue Home
             0,  0   # Blue Bar, Red Off
             ],dtype=np.int8)                 
         
+        assert len(self._tiles) == BOARD_SIZE+4, f"Array length ({len(self._tiles)}) must be {BOARD_SIZE+4}"
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
         assert sum(self._tiles[self._tiles<0]) == -TOTAL_PLAYER_PIECES, f"BLUE must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles<0])})"
         
@@ -441,5 +450,6 @@ class Board():
         if not isinstance(other, Board):
             return 0
         return np.array_equal(self._tiles,other._tiles)
+
 
     

@@ -1,6 +1,6 @@
 from random import choice
-from AgentBase import AgentBase
-from Board import Board
+from src.AgentBase import AgentBase
+from src.Board import Board
 
 class RandomAgent(AgentBase):
     def __init__(self, player):

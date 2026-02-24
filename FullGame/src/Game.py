@@ -4,9 +4,9 @@ import sys
 from time import perf_counter_ns as time
 import random
 
-from AgentBase import AgentBase
-from Player import Player
-from Board import Board, P1BAR,P2BAR,P1OFF,P2OFF
+from src.AgentBase import AgentBase
+from src.Player import Player
+from src.Board import Board, P1BAR,P2BAR,P1OFF,P2OFF
 
 
 logger = logging.getLogger(__name__)

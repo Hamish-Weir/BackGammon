@@ -12,14 +12,14 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 
-from src.Board import Board
+from src.Board import BOARD_SIZE, DIE_SIZE, Board
 from agents.A0Agent import A0Agent, A0Node
 from networks.A0Network import A0Network
 
 MAX_GAME_LENGTH = 10
 
-BEST_MODEL_PATH = "models/best_model.pth"
-TEMP_MODEL_PATH = "models/temp_model.pth"
+BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_best_model.pth"
+TEMP_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_temp_model.pth"
 
 TRAIN_SIMS = 800
 TRAIN_GAMES = 100
@@ -47,9 +47,9 @@ class A0Trainer:
         num_epochs          = 5,
         device              = None,
         number_of_cores     = CPU_COUNT,
-        best_model_path     = "models/best_model.pth",
-        temp_model_path     = "models/temp_model.pth",
-        deque_path          = "models/dataset.pkl"
+        best_model_path     = BEST_MODEL_PATH,
+        temp_model_path     = TEMP_MODEL_PATH,
+        deque_path          = "models/{BOARD_SIZE}_{DIE_SIZE}_dataset.pkl"
     ):
         self.core_no = min(number_of_cores,CPU_COUNT)
 

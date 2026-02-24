@@ -21,7 +21,7 @@ MAX_GAME_LENGTH = 20
 BEST_MODEL_PATH = "models/best_model.pth"
 TEMP_MODEL_PATH = "models/temp_model.pth"
 
-TRAIN_SIMS = 1600
+TRAIN_SIMS = 800
 TRAIN_GAMES = 50
 TRAIN_C_PUCT = 1
 TRAIN_DIRICHLET_ALPHA = 0.1
@@ -29,7 +29,7 @@ TRAIN_DIRICHLET_EPSILON = 0.25
 TRAIN_TEMPERATURE = 0
 TRAIN_TEMPREATURE_PLY = 0
 
-EVAL_SIMS = 2000
+EVAL_SIMS = 1
 EVAL_GAMES = 50
 EVAL_C_PUCT = 1
 EVAL_DIRICHLET_ALPHA = 0.1
@@ -42,7 +42,7 @@ CPU_COUNT = mp.cpu_count()
 class A0Trainer:
     def __init__(
         self,
-        learning_rate       = 0.02,
+        learning_rate       = 0.005,
         batch_size          = 32,
         num_epochs          = 5,
         device              = None,
@@ -89,6 +89,7 @@ class A0Trainer:
             self.temp_model.load_state_dict(torch.load(self.best_model_path))
             print("Loaded existing best model", flush=True)
         except:
+            self.best_model._initialize_weights()
             torch.save(self.best_model.state_dict(), self.best_model_path)
             self.temp_model.load_state_dict(self.best_model.state_dict())
             print("Training new model from scratch", flush=True)
@@ -225,18 +226,8 @@ class A0Trainer:
         b = Board()
 
         n = A0Node(b,1)
-        n.get_val_init_pri(self.best_model)
-
-        e = A0Node.encode_board(b,1)
-
-        self.best_model.eval()
-        with torch.inference_mode():
-            v,p = self.best_model(e)
-
-        v = v.item()
-        p = p.squeeze(0).cpu().numpy()
-
-        p_dic = n._raw_policy_to_policy_dict(p)
+        v = n.get_val_init_pri(self.best_model)
+        p_dic = n.child_prior
 
         print(f"Starting Game State Value: {v}")
         print(f"Starting Game State Priors:")
@@ -244,6 +235,28 @@ class A0Trainer:
             print(f"{i[0]}, {i[1]:.5f}")
 
         print()
+
+        b = Board()
+
+        b.set(
+            np.array([
+                0,0,
+                0,0,2,0,0,-2,
+                0,0,
+            ])
+        )
+
+        n = A0Node(b,-1)
+        v = n.get_val_init_pri(self.best_model)
+        p_dic = n.child_prior
+
+        print(f"Starting Game State Value: {v}")
+        print(f"Starting Game State Priors:")
+        for i in list(p_dic.items()):
+            print(f"{i[0]}, {i[1]:.5f}")
+
+        print()
+
 
 def time_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -452,7 +465,20 @@ if __name__ == '__main__':
     
     trainer = A0Trainer()
 
-    trainer.train(iterations=20)
+    trainer.train(iterations=5000)
 
     play_finish_sound()
-# 14:17:42
+
+    # data = generate_dataset("models/successful_model.pth")
+
+    # for game in data:
+    #     for state in game:
+    #         tensor, pol, val = state
+    #         print(f"Tensor:\n{tensor}")
+    #         print(f"Prior: \n{pol}")
+    #         print(f"Value: {val}")
+    #         print()
+
+
+
+# A0Model: took 1 hr to train, 20 itterations

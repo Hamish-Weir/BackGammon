@@ -226,11 +226,12 @@ class A0Agent(AgentBase):
 
     def __init__(self, 
         player, 
-        model_path = "models/best_model.pth",
-        simulations = 1600,
+        # model_path = "models/successful_model.pth",
+        model_path="models/A0Model.pth",
+        simulations = 100,
         c_puct = 1,
         training_on = False,
-        dirichlet_alpha = 0.03, # 0.03
+        dirichlet_alpha = 0.1, # 0.03
         dirichlet_epsilon = 0.25, # 0.25
         temperature = 0,    # 1
         temperature_ply = 0, # 4?
@@ -259,9 +260,14 @@ class A0Agent(AgentBase):
                 raise Exception("No Model path Provided")
         except Exception:
             if self.training_on:
+                self.model._initialize_weights()
                 print("Model not Found; Initialized with Random Weights")
             else:
-                raise Exception(f"Model Not Found ({model_path})")
+                self.model._initialize_weights()
+                # raise Exception(f"Model Not Found ({model_path})")
+                pass
+
+        self.choice = random.choices
 
     def make_move(self, board: Board, turn = 0, opp_move = None):
         """Makes a move based on the current board state."""
@@ -272,7 +278,7 @@ class A0Agent(AgentBase):
         self.root = A0Node(board=root_board, player=self.player)
         self.root.get_val_init_pri(self.model)
 
-        if self.training_on and turn < self.temperature_ply:
+        if self.training_on:
             self._add_noise_to_root()
 
         for _ in range(self.simulations):
@@ -280,10 +286,17 @@ class A0Agent(AgentBase):
             v = self._simulate(node)
             self._backpropagate(node, v)
 
-        if self.root.children:
-            best_movesequence = max(self.root.legal_movesequences, key=lambda c: (self.root.child_visits.get(tuple(c),0), self.root.child_value.get(tuple(c),0.0)))
-        else: 
-            raise Exception("Too Few Simulations Run")
+
+        if self.training_on and turn <= self.temperature_ply:
+            if self.root.children:
+                best_movesequence = self._select_move_with_temperature()
+            else: 
+                raise Exception("Too Few Simulations Run")
+        else:
+            if self.root.children:
+                best_movesequence = max(self.root.legal_movesequences, key=lambda c: (self.root.child_visits.get(tuple(c),0), self.root.child_value.get(tuple(c),0.0)))
+            else: 
+                raise Exception("Too Few Simulations Run")
         
         return best_movesequence
     
@@ -356,6 +369,25 @@ class A0Agent(AgentBase):
         for k in root.child_prior:
             root.child_prior[k] = root.child_prior[k] / s2
 
+    def _select_move_with_temperature(self):
+        moves = self.root.legal_movesequences
+        visits = [self.root.child_visits.get(tuple(c), 0) for c in moves]
+
+        # If nothing has been visited yet, just pick randomly
+        if sum(visits) == 0:
+            return random.choice(moves)
+
+        # If temperature is 0, fall back to greedy
+        if self.temperature <= 0:
+            return moves[visits.index(max(visits))]
+
+        # Temperature-scaled sampling
+        scaled = [v ** (1.0 / self.temperature) for v in visits]
+        total = sum(scaled)
+        probs = [v / total for v in scaled]
+
+        return random.choices(moves, weights=probs, k=1)[0]
+    
     def get_rollout(self):
         pol = np.zeros(127)
         root = self.root

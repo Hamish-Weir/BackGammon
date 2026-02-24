@@ -71,9 +71,9 @@ class MCTSNode:
 class MCTSAgent(AgentBase):
     def __init__(self, 
         player, 
-        simulations = 4000,
+        simulations = 50,
         c_puct = 1,
-        rollouts = 100,
+        rollouts = 50,
         max_depth = 20,
     ):
         super().__init__(player)
@@ -136,7 +136,7 @@ class MCTSAgent(AgentBase):
         winner = node.board.get_winner()
         if not winner == 0:
             return 1 if winner == node.player else -1
-        return  0 # self._evaluation(node.board, node.player)
+        return self._evaluation(node.board, node.player)
 
     def _backpropagate(self, node: MCTSNode, v: float):
         while node:
@@ -178,6 +178,6 @@ class MCTSAgent(AgentBase):
             return results
 
         results = rollout(board,player)
-        win_rate = np.mean(results == 1)
+        win_rate = np.mean(results)
         return win_rate
     

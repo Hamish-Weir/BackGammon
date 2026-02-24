@@ -365,7 +365,6 @@ class Board():
         BLU = "\033[0;34m"
         YELLOW = "\033[1;33m"
         END = "\033[0m"
-
         BOA = YELLOW
         
         def get_spaced_str(list: list[int]):
@@ -382,14 +381,54 @@ class Board():
                     list2.append(f"{RED}{n:4d}{END}")
             return " ".join(list2)
 
-        board_str  = f""
-        board_str += f"{BLU}BLUE OFF     {BOA}| {BLU}BLUE Home           {BLU}Out         {RED}RED Home{BOA}|      {RED}RED OFF\n"
-        board_str += f"     {RED}RED BAR {BOA}| {BOA}{get_spaced_str([1, 2])}      {get_spaced_str([3, 4])}      {get_spaced_str([5, 6])} {BOA}| {BLU}BLUE BAR     \n"
-        board_str += f"             {BOA}|+----+----+    +----+----+    +----+----+|\n"
-        board_str += f"{BLU}{-self._tiles[P2OFF]:>4d}{RED}{self._tiles[P1BAR]:>4d}     {BOA}|{get_spaced_str_board(self._tiles[BOARD_START:P2HOME_START+1])}      {get_spaced_str_board(self._tiles[P2OUT_END:P1OUT_END+1])}      {get_spaced_str_board(self._tiles[P1HOME_START:P1HOME_END+1])}  {BOA}| {BLU}{-self._tiles[P2BAR]:>4d}{RED}{self._tiles[P1OFF]:>4d}      \n"
-        board_str += f"{END}"
+        # Spacing
+        space = "  "
 
-        return board_str
+        # Left Off & Bar
+        label_left = f"{BLU}BLUE OFF     {BOA}|"
+        numbe_left = f"     {RED}RED BAR {BOA}|"
+        decor_left = f"             {BOA}|"
+        piece_left = f"{BLU}{-self._tiles[P2OFF]:>4d}{RED}{self._tiles[P1BAR]:>4d}     {BOA}|"
+        
+        # Left Home
+        label_left_home = f" {BLU}BLUE Home" + " "*((5*HOME_SIZE)-9)
+        numbe_left_home = f" {BOA}{get_spaced_str(list(np.arange(1,HOME_SIZE+1)))} "
+        decor_left_home = f"+" + "----+"*HOME_SIZE
+        piece_left_home = f"{get_spaced_str_board(self._tiles[BOARD_START:P2HOME_START+1])}  "
+
+        # Left Out
+        label_left_out = " " + " "*((5*(BOARD_SIZE//2 - HOME_SIZE)))
+        numbe_left_out = f" {BOA}{get_spaced_str(list(np.arange(HOME_SIZE+1,BOARD_SIZE//2 + 1)))} "
+        decor_left_out = f"+" + "----+"*(BOARD_SIZE//2 - HOME_SIZE)
+        piece_left_out = f"{get_spaced_str_board(self._tiles[P2HOME_START+1:GAME_SIZE//2])}  "
+
+        # Right Out
+        label_right_out = " " + " "*((5*(BOARD_SIZE//2 - HOME_SIZE)))
+        numbe_right_out = f" {BOA}{get_spaced_str(list(np.arange(BOARD_SIZE//2 + 1,BOARD_SIZE-HOME_SIZE+1)))} "
+        decor_right_out = f"+" + "----+"*(BOARD_SIZE//2 - HOME_SIZE)
+        piece_right_out = f"{get_spaced_str_board(self._tiles[GAME_SIZE//2:P1HOME_START])}  "
+
+        # Right Home
+        label_right_home = " "*((5*HOME_SIZE)-9) + f" {BLU}Red Home "
+        numbe_right_home = f" {BOA}{get_spaced_str(list(np.arange(BOARD_SIZE-HOME_SIZE+1,BOARD_SIZE+1)))} "
+        decor_right_home = f"+" + "----+"*HOME_SIZE
+        piece_right_home = f"{get_spaced_str_board(self._tiles[P1HOME_START:BOARD_END+1])}  "
+
+        # Right Off & Bar
+        label_right = f"{BOA}|      {RED}RED OFF"
+        numbe_right = f"{BOA}| {BLU}BLUE BAR"
+        decor_right = f"|"
+        piece_right = f"{BOA}| {BLU}{-self._tiles[P2BAR]:>4d}{RED}{self._tiles[P1OFF]:>4d}      "
+
+        
+        # Combination
+        label_str = label_left + label_left_home + space + label_left_out + space + label_right_out + space + label_right_home + label_right +"\n"
+        numbe_str = numbe_left + numbe_left_home + space + numbe_left_out + space + numbe_right_out + space + numbe_right_home + numbe_right +"\n"
+        decor_str = decor_left + decor_left_home + space + decor_left_out + space + decor_right_out + space + decor_right_home + decor_right +"\n"
+        piece_str = piece_left + piece_left_home + space + piece_left_out + space + piece_right_out + space + piece_right_home + piece_right +"\n"
+
+        board_str = label_str + numbe_str + decor_str + piece_str + f"{END}"
+        return board_str  
 
     def get_winner(self):
         if self._tiles[P1OFF] == TOTAL_PLAYER_PIECES:

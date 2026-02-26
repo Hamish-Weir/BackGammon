@@ -1,9 +1,9 @@
 from copy import deepcopy
 import numpy as np
 
-BOARD_SIZE = 6
+BOARD_SIZE = 24
 TOTAL_PLAYER_PIECES = 2
-HOME_SIZE = 2
+HOME_SIZE = 6
 DIE_SIZE = 2
 
 BOARD_START = 2            
@@ -16,8 +16,6 @@ P1BAR = BOARD_START-1
 
 P2BAR = BOARD_END+1    
 P1OFF = BOARD_END+2   
-
-
 
 
 P1OUT_START = BOARD_START                   
@@ -49,13 +47,14 @@ class Board():
     # Positive = RED
     # Negative = BLUE
     def __init__(self):
-        self._tiles = np.array([
-            0,  0,  # Blue Off, Red Bar
-            2,  0,  # Red Home
-            0,  0, # 0,  0, 0,  0,
-            0, -2,  # Blue Home
-            0,  0   # Blue Bar, Red Off
-            ],dtype=np.int8)                 
+
+        assert BOARD_SIZE >= 6, f"Board size ({BOARD_SIZE}) must be 6 or greater"
+        assert HOME_SIZE >= 2, f"Home size ({HOME_SIZE}) must be 2 or greater"
+
+        self._tiles = np.zeros([GAME_SIZE],dtype=np.int8)
+
+        self._tiles[BOARD_START] = 2
+        self._tiles[BOARD_END] = -2            
         
         assert len(self._tiles) == BOARD_SIZE+4, f"Array length ({len(self._tiles)}) must be {BOARD_SIZE+4}"
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"

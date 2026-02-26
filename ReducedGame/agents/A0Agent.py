@@ -10,7 +10,7 @@ import torch
 
 from networks.A0Network import A0Network
 from src.AgentBase import AgentBase
-from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, PRIOR_ONE_SIZE, PRIOR_ONE_SUB_SIZE, PRIOR_TWO_SIZE, PRIOR_TWO_SUB_SIZE, Board
+from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, PRIOR_ONE_SIZE, PRIOR_ONE_SUB_SIZE, PRIOR_SIZE, PRIOR_TWO_SIZE, PRIOR_TWO_SUB_SIZE, Board
 
 @dataclass
 class A0Node:
@@ -264,7 +264,7 @@ class A0Agent(AgentBase):
             self.model._initialize_weights()
             print("Model not Found; Initialized with Random Weights")
             torch.save(self.model.state_dict(), self.model_path)
-
+ 
         self.choice = random.choices
 
     def make_move(self, board: Board, turn = 0, opp_move = None):
@@ -387,7 +387,7 @@ class A0Agent(AgentBase):
         return random.choices(moves, weights=probs, k=1)[0]
     
     def get_rollout(self):
-        pol = np.zeros(127)
+        pol = np.zeros(PRIOR_SIZE)
         root = self.root
         total = 0
         for ms in root.legal_movesequences:

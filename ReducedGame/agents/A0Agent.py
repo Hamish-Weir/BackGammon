@@ -182,13 +182,18 @@ class A0Node:
     @staticmethod
     def encode_board(board,player):
         board_arr = board._tiles
-        
-        if player == 1:
-            player_board = board_arr[::1].copy()
-        else:
-            player_board = -board_arr[::-1].copy()
 
-        return torch.tensor(player_board, dtype=torch.float32)
+        counts = np.arange(1, TOTAL_PLAYER_PIECES + 1)[:, None]
+        abs_board = np.abs(board_arr)
+
+        if player == 1:
+            player_board   = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)
+            opponent_board = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)
+        else:
+            player_board   = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)
+            opponent_board = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)
+
+        return torch.tensor(np.array([player_board,opponent_board]), dtype=torch.float32)
 
 
     def __str__(self):

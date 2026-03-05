@@ -10,7 +10,7 @@ import torch
 
 from networks.A0Network import A0Network
 from src.AgentBase import AgentBase
-from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, PRIOR_ONE_SIZE, PRIOR_ONE_SUB_SIZE, PRIOR_SIZE, PRIOR_TWO_SIZE, PRIOR_TWO_SUB_SIZE, Board
+from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, HOME_SIZE, P1BAR, P1OFF, P2BAR, P2OFF, PRIOR_ONE_SIZE, PRIOR_ONE_SUB_SIZE, PRIOR_SIZE, PRIOR_TWO_SIZE, PRIOR_TWO_SUB_SIZE, TOTAL_PLAYER_PIECES, Board
 
 @dataclass
 class A0Node:
@@ -229,7 +229,7 @@ class A0Agent(AgentBase):
 
     def __init__(self, 
         player, 
-        model_path=f"models/{BOARD_SIZE}_{DIE_SIZE}_A0Model.pth",
+        model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
         simulations = 100,
         c_puct = 1,
         training_on = False,

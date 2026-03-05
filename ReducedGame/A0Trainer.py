@@ -12,22 +12,22 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 
-from src.Board import BOARD_SIZE, DIE_SIZE, Board
+from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, HOME_SIZE, TOTAL_PLAYER_PIECES, Board
 from agents.A0Agent import A0Agent, A0Node
 from networks.A0Network import A0Network
 
-MAX_GAME_LENGTH = 10
+MAX_GAME_LENGTH = 50
 
-BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_best_model.pth"
-TEMP_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_temp_model.pth"
+BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
+TEMP_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_temp_model.pth"
 
 TRAIN_SIMS = 800
 TRAIN_GAMES = 100
 TRAIN_C_PUCT = 1
 TRAIN_DIRICHLET_ALPHA = 0.1
 TRAIN_DIRICHLET_EPSILON = 0.25
-TRAIN_TEMPERATURE = 0
-TRAIN_TEMPREATURE_PLY = 0
+TRAIN_TEMPERATURE = 1
+TRAIN_TEMPREATURE_PLY = 6
 
 EVAL_SIMS = 1
 EVAL_GAMES = 50
@@ -36,7 +36,6 @@ EVAL_DIRICHLET_ALPHA = 0.1
 EVAL_DIRICHLET_EPSILON = 0.25
 EVAL_TEMPERATURE = 0
 EVAL_TEMPREATURE_PLY = 0
-
 CPU_COUNT = mp.cpu_count()
 
 class A0Trainer:
@@ -49,10 +48,11 @@ class A0Trainer:
         number_of_cores     = CPU_COUNT,
         best_model_path     = BEST_MODEL_PATH,
         temp_model_path     = TEMP_MODEL_PATH,
-        deque_path          = "models/{BOARD_SIZE}_{DIE_SIZE}_dataset.pkl"
+        deque_path          = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_dataset.pkl"
     ):
         self.core_no = min(number_of_cores,CPU_COUNT)
 
+        self.value_c        = 0.2
         self.learning_rate  = learning_rate
         self.batch_size     = batch_size
         self.num_epochs     = num_epochs
@@ -164,8 +164,8 @@ class A0Trainer:
                 policy_loss = -(p_batch * pol_pred).sum(dim=1).mean()
                 value_loss = F.mse_loss(v_pred, v_batch)
 
-                loss = policy_loss + value_loss
-                total_loss+=loss
+                loss = policy_loss + self.value_c * value_loss
+                total_loss += loss
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -238,13 +238,11 @@ class A0Trainer:
 
         b = Board()
 
-        b.set(
-            np.array([
-                0,0,
-                0,0,2,0,0,-2,
-                0,0,
-            ])
-        )
+        arr = b.get()
+        arr[BOARD_START] = 0
+        arr[BOARD_START+2] = 2
+            
+        b.set(arr)
 
         n = A0Node(b,-1)
         v = n.get_val_init_pri(self.best_model)

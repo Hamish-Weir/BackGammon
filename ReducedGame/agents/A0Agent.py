@@ -190,8 +190,8 @@ class A0Node:
             player_board   = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)
             opponent_board = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)
         else:
-            player_board   = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)
-            opponent_board = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)
+            player_board   = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)[:, ::-1]
+            opponent_board = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)[:, ::-1]
 
         return torch.tensor(np.array([player_board,opponent_board]), dtype=torch.float32)
 

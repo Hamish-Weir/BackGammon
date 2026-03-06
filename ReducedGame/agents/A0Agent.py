@@ -185,15 +185,17 @@ class A0Node:
 
         counts = np.arange(1, TOTAL_PLAYER_PIECES + 1)[:, None]
         abs_board = np.abs(board_arr)
+        piece_mask = (abs_board == counts)
 
         if player == 1:
-            player_board   = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)
-            opponent_board = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)
+            player_board   = ((board_arr > 0) & piece_mask).astype(np.int8)
+            opponent_board = ((board_arr < 0) & piece_mask).astype(np.int8)
         else:
-            player_board   = ((board_arr < 0) & (abs_board == counts)).astype(np.int8)[:, ::-1]
-            opponent_board = ((board_arr > 0) & (abs_board == counts)).astype(np.int8)[:, ::-1]
+            player_board   = ((board_arr < 0) & piece_mask).astype(np.int8)[:, ::-1]
+            opponent_board = ((board_arr > 0) & piece_mask).astype(np.int8)[:, ::-1]
 
-        return torch.tensor(np.array([player_board,opponent_board]), dtype=torch.float32)
+        stacked = np.stack((player_board, opponent_board)).astype(np.float32)
+        return torch.from_numpy(stacked)
 
 
     def __str__(self):

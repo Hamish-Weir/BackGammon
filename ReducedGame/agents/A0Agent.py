@@ -237,7 +237,7 @@ class A0Agent(AgentBase):
     def __init__(self, 
         player, 
         model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
-        simulations = 100,
+        simulations = 800,
         c_puct = 1,
         training_on = False,
         dirichlet_alpha = 0.1, # 0.03

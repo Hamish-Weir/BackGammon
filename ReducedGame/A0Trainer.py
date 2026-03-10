@@ -16,17 +16,18 @@ from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, H
 from agents.A0Agent import A0Agent, A0Node
 from networks.A0Network import A0Network
 
-MAX_GAME_LENGTH = 50
+MAX_GAME_LENGTH = 30
 
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
 TEMP_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_temp_model.pth"
+GAME_DATA_PATH =  f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_dataset.pkl"
 
 TRAIN_SIMS = 800
 TRAIN_GAMES = 100
 TRAIN_C_PUCT = 1
 TRAIN_DIRICHLET_ALPHA = 0.1
-TRAIN_DIRICHLET_EPSILON = 0.25
-TRAIN_TEMPERATURE = 1
+TRAIN_DIRICHLET_EPSILON = 0.33
+TRAIN_TEMPERATURE = 2
 TRAIN_TEMPREATURE_PLY = 6
 
 EVAL_SIMS = 1
@@ -43,16 +44,16 @@ class A0Trainer:
         self,
         learning_rate       = 0.002,
         batch_size          = 32,
-        num_epochs          = 5,
+        num_epochs          = 10,
         device              = None,
         number_of_cores     = CPU_COUNT,
         best_model_path     = BEST_MODEL_PATH,
         temp_model_path     = TEMP_MODEL_PATH,
-        deque_path          = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_dataset.pkl"
+        deque_path          = GAME_DATA_PATH
     ):
-        self.core_no = min(number_of_cores,CPU_COUNT)
+        self.core_no = min(number_of_cores,CPU_COUNT-1)
 
-        self.value_c        = 0.2
+        self.value_c        = 2
         self.learning_rate  = learning_rate
         self.batch_size     = batch_size
         self.num_epochs     = num_epochs
@@ -238,11 +239,14 @@ class A0Trainer:
 
         b = Board()
 
-        arr = b.get()
-        arr[BOARD_START] = 0
-        arr[BOARD_START+2] = 2
+        l = b.get_legal_movesequences(1)
+        b.do_move_sequence(l[1],1)
+        
+        # arr = b.get()
+        # arr[BOARD_START] = 0
+        # arr[BOARD_START+1] = 2
             
-        b.set(arr)
+        # b.set(arr)
 
         n = A0Node(b,-1)
         v = n.get_val_init_pri(self.best_model)
@@ -463,7 +467,7 @@ if __name__ == '__main__':
     
     trainer = A0Trainer()
 
-    trainer.train(iterations=50)
+    trainer.train(iterations=100)
 
     play_finish_sound()
 

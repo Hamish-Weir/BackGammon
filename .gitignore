@@ -2,3 +2,6 @@
 **/.pytest_cache/
 .vscode
 .venv
+
+**/test*
+**/*.pth

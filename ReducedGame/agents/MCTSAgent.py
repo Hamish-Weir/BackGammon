@@ -71,7 +71,7 @@ class MCTSNode:
 class MCTSAgent(AgentBase):
     def __init__(self, 
         player, 
-        simulations = 50,
+        simulations = 500,
         c_puct = 1,
         rollouts = 50,
         max_depth = 20,

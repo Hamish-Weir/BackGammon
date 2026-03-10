@@ -11,6 +11,7 @@ class RandomAgent(AgentBase):
         """Makes a move based on the current board state."""
         
         legal = board.get_legal_movesequences(die1,die2, self.player)
-        movesequence = self.choice(legal)
-        
-        return movesequence
+        if legal:
+            movesequence = self.choice(legal)
+            return movesequence
+        return []

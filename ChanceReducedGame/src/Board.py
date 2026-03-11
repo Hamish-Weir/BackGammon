@@ -418,7 +418,7 @@ class Board():
         piece_right_out = f"{get_spaced_str_board(self._tiles[GAME_SIZE//2:P1HOME_START])}  "
 
         # Right Home
-        label_right_home = " "*((5*HOME_SIZE)-9) + f" {BLU}Red Home "
+        label_right_home = " "*((5*HOME_SIZE)-9) + f" {RED}Red Home "
         numbe_right_home = f" {BOA}{get_spaced_str(list(np.arange(BOARD_SIZE-HOME_SIZE+1,BOARD_SIZE+1)))} "
         decor_right_home = f"+" + "----+"*HOME_SIZE
         piece_right_home = f"{get_spaced_str_board(self._tiles[P1HOME_START:BOARD_END+1])}  "

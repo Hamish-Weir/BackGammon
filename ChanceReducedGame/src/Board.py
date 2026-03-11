@@ -334,9 +334,8 @@ class Board():
                             moveSequenceList.append(ms)
 
 
-            if len(moveSequenceSet) == 0:
-                moveSequenceSet.add(())
-                moveSequenceList.append([])
+        if len(moveSequenceSet) == 0:
+            return [[]]
 
 
         if player == 1:

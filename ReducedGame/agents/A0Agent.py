@@ -180,7 +180,7 @@ class A0Node:
         return value
 
     @staticmethod
-    def encode_board(board,player):
+    def encode_board(board, player):
         board_arr = board._tiles
 
         counts = np.arange(1, TOTAL_PLAYER_PIECES + 1)[:, None]
@@ -195,6 +195,7 @@ class A0Node:
             opponent_board = ((board_arr > 0) & piece_mask).astype(np.int8)[:, ::-1]
 
         stacked = np.stack((player_board, opponent_board)).astype(np.float32)
+
         return torch.from_numpy(stacked)
 
 
@@ -237,6 +238,7 @@ class A0Agent(AgentBase):
     def __init__(self, 
         player, 
         model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
+        # model_path=f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth",
         simulations = 800,
         c_puct = 1,
         training_on = False,

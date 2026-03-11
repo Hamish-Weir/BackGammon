@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.Board import BOARD_SIZE, PRIOR_SIZE, TOTAL_PLAYER_PIECES
+from src.Board import BOARD_SIZE, GAME_SIZE, PRIOR_SIZE, TOTAL_PLAYER_PIECES
 
 class ResidualBlock(nn.Module):
     def __init__(self, channels: int):
@@ -37,7 +37,7 @@ class A0Network(nn.Module):
     def __init__(
         self,
         height: int = TOTAL_PLAYER_PIECES,
-        width: int = BOARD_SIZE + 4,
+        width: int = GAME_SIZE,
         output_size: int = PRIOR_SIZE,
         in_channels: int = 2,
         channels: int = 128,
@@ -89,7 +89,7 @@ class A0Network(nn.Module):
         """
 
         # Allow single-sample input
-        if x.ndim == 3: # (C, H, W) -> (B, C, H, W)
+        if x.ndim == 3: # (1, H, W) -> (B, 1, H, W)
             x = x.unsqueeze(0)
 
         # initial

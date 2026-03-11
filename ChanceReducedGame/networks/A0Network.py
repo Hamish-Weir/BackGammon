@@ -36,10 +36,10 @@ class A0Network(nn.Module):
     """
     def __init__(
         self,
-        height: int = 10, # 4 for each player, 2 dice
+        height: int = TOTAL_PLAYER_PIECES+2, # 4 for each player, 2 dice
         width: int = GAME_SIZE,
         output_size: int = PRIOR_SIZE,
-        in_channels: int = 1, # B1, B2, D1, D2
+        in_channels: int = 2, # B1, B2, D1, D2
         channels: int = 128,
         num_res_blocks: int = 10,
     ):

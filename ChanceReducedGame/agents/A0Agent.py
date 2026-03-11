@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from dataclasses import dataclass, field
 import math
 import random
@@ -24,7 +25,7 @@ class A0Node:
     legal_movesequences: Optional[list[list]]   = None
     
     children:           Dict[tuple, A0Node | None]  = field(default_factory=dict)
-    child_prior:        Dict[tuple, float]          = field(default_factory=dict)
+    group_prior:        Dict[tuple, float]          = field(default_factory=dict)
     child_visits:       Dict[tuple, int]            = field(default_factory=dict)
     child_total_value:  Dict[tuple, float]          = field(default_factory=dict)
     child_value:        Dict[tuple, float]          = field(default_factory=dict)
@@ -39,19 +40,27 @@ class A0Node:
         movesequence: Optional[list] = None
     ):
         self.board = board
-        self.die1 = die1,
-        self.die2 = die2,
+
+        self.die1 = die1
+        self.die2 = die2
+        
         self.player = player
         self.parent = parent
         self.movesequence = movesequence
         
-        self.legal_movesequences = self.board.get_legal_movesequences(self.player)
+        self.legal_movesequences = self.board.get_legal_movesequences(die1, die2, self.player)
 
-        self.children:           Dict[tuple, A0Node | None]  = {}
-        self.child_prior:        Dict[tuple, float]          = {}
-        self.child_visits:       Dict[tuple, int]            = {}
-        self.child_total_value:  Dict[tuple, float]          = {}
-        self.child_value:        Dict[tuple, float]          = {}
+        # MS -> Value
+        self.group_prior:       Dict[tuple, float]          = {}
+        self.group_visits:      Dict[tuple, int]            = {}
+        self.group_total_value: Dict[tuple, int]            = {}
+        self.group_value:       Dict[tuple, int]            = {}
+
+        # ((die1,die2),MS) -> Value
+        self.children:          Dict[tuple, A0Node | None]  = {}
+        self.child_visits:      Dict[tuple, int]            = {}
+        self.child_total_value: Dict[tuple, float]          = {}
+        self.child_value:       Dict[tuple, float]          = {}
 
     def best_child(self, exploration: float = 1.4) -> (Optional[A0Node], A0Node): # type: ignore
         best_move_sequence = None
@@ -60,7 +69,7 @@ class A0Node:
         for move_sequence in self.legal_movesequences:
             c_key = tuple(move_sequence)
             value = self.child_total_value.get(c_key,0.0)
-            prior = self.child_prior.get(c_key,0.0)
+            prior = self.group_prior.get(c_key,0.0)
             child_visits = self.child_visits.get(c_key,0.0)
 
             PUCT = (
@@ -78,33 +87,54 @@ class A0Node:
         return best_child, self, best_move_sequence
     
     def next_child(self,exploration):  
-        groups = defaultdict(list)
 
-        # Step 1: group children by dice pair
-        for child in self.children.values():
-            key = (child.die1, child.die2)
-            groups[key].append(child)
+        # Step 1: find move_sequence with maximum UCB
+        best_move_sequence = None
+        best_PUCT = -math.inf
+        group_visits = sum([self.group_visits.get(tuple(ms),0) for ms in self.legal_movesequences])
+        for move_sequence in self.legal_movesequences:
+            g_key = tuple(move_sequence)
+            value = self.group_value.get(g_key,0.0)
+            prior = self.group_prior.get(g_key,0.0)
+            child_visits = self.group_visits.get(g_key,0.0)
 
-        # Step 2: find dice pair with maximum total visits
-        best_pair = min(
-            groups,
-            key=lambda k: sum(child.visits for child in groups[k]) * (2 if k[0] == k[1] else 1)
-        )
+            PUCT = (
+                exploration * prior * math.sqrt(group_visits)/(1+child_visits)
+                + value
+            )
 
-        # Step 3: pick child with highest UCB score in that pair
-        best_child = max(groups[best_pair], key=lambda c: c.ucb_score(exploration))
+            if PUCT > best_PUCT:
+                best_PUCT = PUCT
+                best_move_sequence = move_sequence
 
-        return best_child
+
+        # Step 2: find dice pair with minimum total visits
+        g_key = tuple(best_move_sequence)
+        die1,die2 = min([(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)],key= lambda k: self.child_visits.get(((k[0],k[1]),g_key),0) * (2 if k[0] == k[1] else 1))
+
+        best_child = self.children.get(((die1,die2),g_key),None)
+
+        print(die1,die2,best_move_sequence)
+
+        return best_child, self, die1,die2, best_move_sequence
     
-    def backup(self, move_sequence, v):
-        c_key = tuple(move_sequence)
+    def backup(self, move_sequence, die1, die2, v):
+        c_key = ((die1,die2),tuple(move_sequence))
+        g_key = tuple(move_sequence)
 
-        total_visits = self.child_visits.get(c_key,0) + 1
-        total_value  = self.child_total_value.get(c_key,0.0) + v
+        child_total_visits = self.child_visits.get(c_key,0) + 1
+        child_total_value  = self.child_total_value.get(c_key,0.0) + v
 
-        self.child_visits[c_key] = total_visits
-        self.child_total_value[c_key] = total_value
-        self.child_value[c_key] = total_value/total_visits
+        self.child_visits[c_key] = child_total_visits
+        self.child_total_value[c_key] = child_total_value
+        self.child_value[c_key] = child_total_value/child_total_visits
+
+        group_total_visits = self.group_visits.get(g_key,0) + 1
+        group_total_value  = self.group_total_value.get(g_key,0.0) + v
+        
+        self.group_visits[c_key] = group_total_visits
+        self.group_total_value[c_key] = group_total_value
+        self.group_value[c_key] = group_total_value/child_total_visits
 
     @staticmethod
     def _movesequence_to_idx(movesequence):
@@ -200,52 +230,43 @@ class A0Node:
         value = val.item()
         policy = pol.squeeze(0).cpu().numpy()
 
-        self.child_prior = self._raw_policy_to_policy_dict(policy) # Initialize child priors
+        self.group_prior = self._raw_policy_to_policy_dict(policy) # Initialize child priors
 
         return value
 
     @staticmethod
     def encode_board(board, die1, die2, player):
-        tiles = board._tiles
+        board_arr = board._tiles
 
-        if player == -1:
-            tiles = -tiles[:, ::-1]
+        counts = np.arange(1, TOTAL_PLAYER_PIECES + 1)[:, None]
+        abs_board = np.abs(board_arr)
+        piece_mask = (abs_board == counts)
 
-        player_counts = np.clip(tiles, 0, None)
-        opp_counts = np.clip(-tiles, 0, None)
+        if player == 1:
+            player_board   = ((board_arr > 0) & piece_mask).astype(np.float32)
+            opponent_board = ((board_arr < 0) & piece_mask).astype(np.float32)
+        else:
+            player_board   = ((board_arr < 0) & piece_mask).astype(np.float32)[:, ::-1]
+            opponent_board = ((board_arr > 0) & piece_mask).astype(np.float32)[:, ::-1]
 
-        channels = []
-
-        # player channels
-        channels.append((player_counts == 1).astype(np.float32))
-        channels.append((player_counts == 2).astype(np.float32))
-        channels.append((player_counts == 3).astype(np.float32))
-        channels.append((player_counts >= 4).astype(np.float32) * (player_counts / 5))
-
-        # opponent channels
-        channels.append((opp_counts == 1).astype(np.float32))
-        channels.append((opp_counts == 2).astype(np.float32))
-        channels.append((opp_counts == 3).astype(np.float32))
-        channels.append((opp_counts >= 4).astype(np.float32) * (opp_counts / 5))
 
         # dice planes
-        d1, d2 = sorted((die1, die2), reverse=True)
+        d1 = max(die1, die2)-1
+        d2 = min(die1, die2)-1
 
-        die1_plane = np.full_like(tiles, d1/6, dtype=np.float32)
-        die2_plane = np.full_like(tiles, d2/6, dtype=np.float32)
+        die1_plane = np.full_like(board_arr, d1/(DIE_SIZE-1), dtype=np.float32)
+        die2_plane = np.full_like(board_arr, d2/(DIE_SIZE-1), dtype=np.float32)
 
-        channels.append(die1_plane)
-        channels.append(die2_plane)
+        player_board   = np.vstack((player_board,die1_plane,die2_plane))
+        opponent_board = np.vstack((opponent_board,die1_plane,die2_plane))
 
-        stacked = np.stack(channels).astype(np.float32)
-
-        return torch.from_numpy(stacked).unsqueeze(0)
-
+        stacked = np.stack((player_board, opponent_board)).astype(np.float32)
+        return torch.from_numpy(stacked)
 
     def __str__(self):
         if self.parent:
             c_key = tuple(self.movesequence)
-            return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>2d}, Prior: {self.parent.child_prior.get(c_key,0):>.3f}, Visits: {self.parent.child_visits.get(c_key,0):>3d}, Total V: {self.parent.child_total_value.get(c_key,0.0):>.2f}, Value: {self.parent.child_value.get(c_key,0.0):>.5f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
+            return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>2d}, Prior: {self.parent.group_prior.get(c_key,0):>.3f}, Visits: {self.parent.child_visits.get(c_key,0):>3d}, Total V: {self.parent.child_total_value.get(c_key,0.0):>.2f}, Value: {self.parent.child_value.get(c_key,0.0):>.5f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
         return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Prior: {None}, Visits: {None}, Total Value: {None}, Value: {None}, Action: {None}\n"
 
     def __repr__(self) -> str:
@@ -281,7 +302,7 @@ class A0Agent(AgentBase):
     def __init__(self, 
         player, 
         model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
-        simulations = 800,
+        simulations = 10,
         c_puct = 1,
         training_on = False,
         dirichlet_alpha = 0.1, # 0.03
@@ -324,6 +345,7 @@ class A0Agent(AgentBase):
         root_board = Board()
         root_board.set(board.get())
 
+
         self.root = A0Node(board=root_board, die1=die1, die2=die2, player=self.player)
         self.root.get_val_init_pri(self.model)
 
@@ -351,12 +373,12 @@ class A0Agent(AgentBase):
     
     def _select(self, node: A0Node) -> A0Node:
         while node.board.get_winner() == 0:
-            node, parent, ms = node.best_child(self.c_puct)
+            node, parent, die1,die2,ms = node.next_child(self.c_puct)
             if not node:
-                return self._expand(node,parent,ms)
+                return self._expand(node,parent,die1,die2,ms)
         return node
 
-    def _expand(self, node: A0Node|None, parent:A0Node, movesequence:list) -> A0Node:
+    def _expand(self, node: A0Node|None, parent:A0Node,die1: int, die2: int, movesequence:list) -> A0Node:
         
         next_board = Board()
         next_board.set(parent.board.get())
@@ -364,6 +386,8 @@ class A0Agent(AgentBase):
 
         child = A0Node(
                 board           = next_board,
+                die1            = die1,
+                die2            = die2,
                 player          = -parent.player,
                 parent          = parent,
                 movesequence    = movesequence,
@@ -383,7 +407,7 @@ class A0Agent(AgentBase):
         while node.parent:
             v=-v
 
-            node.parent.backup(node.movesequence,v)
+            node.parent.backup(node.movesequence, node.die1, node.die2, v)
             node=node.parent
     
     def _add_noise_to_root(self):
@@ -392,7 +416,7 @@ class A0Agent(AgentBase):
 
         L = len(root.legal_movesequences)
 
-        orig_probs = np.array([root.child_prior.get(tuple(m), 0.0) for m in root.legal_movesequences])
+        orig_probs = np.array([root.group_prior.get(tuple(m), 0.0) for m in root.legal_movesequences])
         # normalize just in case
         s = orig_probs.sum()
         if s <= 0:
@@ -411,12 +435,12 @@ class A0Agent(AgentBase):
 
         # write back into node.P for the legal moves
         for m, p in zip(root.legal_movesequences, mixed):
-            root.child_prior[tuple(m)] = np.float32(p)
+            root.group_prior[tuple(m)] = np.float32(p)
 
         # ensure normalization
-        s2 = sum(root.child_prior.values())
-        for k in root.child_prior:
-            root.child_prior[k] = root.child_prior[k] / s2
+        s2 = sum(root.group_prior.values())
+        for k in root.group_prior:
+            root.group_prior[k] = root.group_prior[k] / s2
 
     def _select_move_with_temperature(self):
         moves = self.root.legal_movesequences

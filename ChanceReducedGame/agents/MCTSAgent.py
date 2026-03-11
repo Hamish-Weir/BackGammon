@@ -35,12 +35,6 @@ class MCTSNode:
         )
     
     def next_child(self,exploration):  
-        untried_moves = []
-        for d2 in range(1,DIE_SIZE+1):
-            for d1 in range(d2,DIE_SIZE+1):
-                untried_moves.extend([((d1,d2),m) for m in self.board.get_legal_movesequences(d1,d2,self.player)])
-
-        
         groups = defaultdict(list)
 
         # Step 1: group children by dice pair
@@ -51,7 +45,7 @@ class MCTSNode:
         # Step 2: find dice pair with maximum total visits
         best_pair = min(
             groups,
-            key=lambda k: sum(child.visits for child in groups[k])
+            key=lambda k: sum(child.visits for child in groups[k]) * (2 if k[0] == k[1] else 1)
         )
 
         # Step 3: pick child with highest UCB score in that pair
@@ -59,7 +53,6 @@ class MCTSNode:
 
         return best_child
 
-    
     def backup(self, v):
         self.visits += 1
         self.total_value += v
@@ -68,7 +61,6 @@ class MCTSNode:
     def __str__(self):
         return f"MCTSNode(Player: {self.player:>4d}, Dice: {(self.die1,self.die2)} Children: {len(self.children.values()):>4d}, Visits: {self.visits:>4d}, Total Value: {self.total_value:>.4f}, Value: {self.value:>.4f}, Action: {self.ms_to_str(self.movesequence,1)}\n"
         
-
     def __repr__(self) -> str:
         return str(self)
     

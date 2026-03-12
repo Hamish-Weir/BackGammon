@@ -26,6 +26,9 @@ class A0Node:
     
     children:           Dict[tuple, A0Node | None]  = field(default_factory=dict)
     group_prior:        Dict[tuple, float]          = field(default_factory=dict)
+    group_visits:       Dict[tuple, int]            = field(default_factory=dict)
+    group_total_value:  Dict[tuple, float]          = field(default_factory=dict)
+    group_value:        Dict[tuple, float]          = field(default_factory=dict)
     child_visits:       Dict[tuple, int]            = field(default_factory=dict)
     child_total_value:  Dict[tuple, float]          = field(default_factory=dict)
     child_value:        Dict[tuple, float]          = field(default_factory=dict)
@@ -61,45 +64,22 @@ class A0Node:
         self.child_visits:      Dict[tuple, int]            = {}
         self.child_total_value: Dict[tuple, float]          = {}
         self.child_value:       Dict[tuple, float]          = {}
-
-    def best_child(self, exploration: float = 1.4) -> (Optional[A0Node], A0Node): # type: ignore
-        best_move_sequence = None
-        best_PUCT = -math.inf
-        children_visits = sum([self.child_visits.get(tuple(ms),0) for ms in self.legal_movesequences])
-        for move_sequence in self.legal_movesequences:
-            c_key = tuple(move_sequence)
-            value = self.child_total_value.get(c_key,0.0)
-            prior = self.group_prior.get(c_key,0.0)
-            child_visits = self.child_visits.get(c_key,0.0)
-
-            PUCT = (
-                exploration * prior * math.sqrt(children_visits)/(1+child_visits)
-                + value
-            )
-
-            if PUCT > best_PUCT:
-                best_PUCT = PUCT
-                best_move_sequence = move_sequence
-
-        c_key = tuple(best_move_sequence)
-        best_child = self.children.get(c_key,None)
-
-        return best_child, self, best_move_sequence
     
     def next_child(self,exploration):  
 
         # Step 1: find move_sequence with maximum UCB
         best_move_sequence = None
         best_PUCT = -math.inf
-        group_visits = sum([self.group_visits.get(tuple(ms),0) for ms in self.legal_movesequences])
+        all_visits = sum([self.group_visits.get(tuple(ms),0) for ms in self.legal_movesequences])
         for move_sequence in self.legal_movesequences:
+            
             g_key = tuple(move_sequence)
             value = self.group_value.get(g_key,0.0)
             prior = self.group_prior.get(g_key,0.0)
-            child_visits = self.group_visits.get(g_key,0.0)
+            group_visits = self.group_visits.get(g_key,0.0)
 
             PUCT = (
-                exploration * prior * math.sqrt(group_visits)/(1+child_visits)
+                exploration * prior * math.sqrt(all_visits)/(1+group_visits)
                 + value
             )
 
@@ -114,11 +94,11 @@ class A0Node:
 
         best_child = self.children.get(((die1,die2),g_key),None)
 
-        print(die1,die2,best_move_sequence)
 
         return best_child, self, die1,die2, best_move_sequence
     
     def backup(self, move_sequence, die1, die2, v):
+        
         c_key = ((die1,die2),tuple(move_sequence))
         g_key = tuple(move_sequence)
 
@@ -132,9 +112,9 @@ class A0Node:
         group_total_visits = self.group_visits.get(g_key,0) + 1
         group_total_value  = self.group_total_value.get(g_key,0.0) + v
         
-        self.group_visits[c_key] = group_total_visits
-        self.group_total_value[c_key] = group_total_value
-        self.group_value[c_key] = group_total_value/child_total_visits
+        self.group_visits[g_key] = group_total_visits
+        self.group_total_value[g_key] = group_total_value
+        self.group_value[g_key] = group_total_value/child_total_visits
 
     @staticmethod
     def _movesequence_to_idx(movesequence):
@@ -265,8 +245,8 @@ class A0Node:
 
     def __str__(self):
         if self.parent:
-            c_key = tuple(self.movesequence)
-            return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>2d}, Prior: {self.parent.group_prior.get(c_key,0):>.3f}, Visits: {self.parent.child_visits.get(c_key,0):>3d}, Total V: {self.parent.child_total_value.get(c_key,0.0):>.2f}, Value: {self.parent.child_value.get(c_key,0.0):>.5f}, Action: {self.ms_to_str(self.movesequence,self.parent.player)}\n"
+            c_key = ((self.die1,self.die2),tuple(self.movesequence))
+            return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>2d}, Prior: {self.parent.group_prior.get(c_key,0):>.3f}, Visits: {self.parent.child_visits.get(c_key,0):>3d}, Total V: {self.parent.child_total_value.get(c_key,0.0):>.2f}, Value: {self.parent.child_value.get(c_key,0.0):>.5f}, Action: {self.die1,self.die2} {self.ms_to_str(self.movesequence,self.parent.player)}\n"
         return f"MCTSNode(Player: {self.player:>4d}, Children: {len(self.children.values()):>4d}, Prior: {None}, Visits: {None}, Total Value: {None}, Value: {None}, Action: {None}\n"
 
     def __repr__(self) -> str:
@@ -275,9 +255,10 @@ class A0Node:
     def ms_to_str(self,ms,player):
         if not ms == None:
             ms_str = "["
-            for m in ms:
-                m_str = self.m_to_str(m,player)
-                ms_str += m_str
+            # for m in ms:
+            #     m_str = self.m_to_str(m,player)
+            #     ms_str += m_str
+            ms_str += ", ".join([self.m_to_str(m,player) for m in ms])
             ms_str += "]"    
             return ms_str  
         else:
@@ -294,7 +275,7 @@ class A0Node:
         else:
             e = f"{Board.end_point(m[0],m[1],player)-BOARD_START+1:3d}"
 
-        m_str = str(f"({s}, {e}, {m[1]}), ")
+        m_str = str(f"({s}, {e}, {m[1]})")
         return m_str
 
 class A0Agent(AgentBase):
@@ -302,7 +283,7 @@ class A0Agent(AgentBase):
     def __init__(self, 
         player, 
         model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
-        simulations = 10,
+        simulations = 800,
         c_puct = 1,
         training_on = False,
         dirichlet_alpha = 0.1, # 0.03
@@ -365,7 +346,7 @@ class A0Agent(AgentBase):
                 raise Exception("Too Few Simulations Run")
         else:
             if self.root.children:
-                best_movesequence = max(self.root.legal_movesequences, key=lambda c: (self.root.child_visits.get(tuple(c),0), self.root.child_value.get(tuple(c),0.0)))
+                best_movesequence = max(self.root.legal_movesequences, key=lambda k: (self.root.group_visits.get(tuple(k),0), self.root.group_value.get(tuple(k),0.0)))
             else: 
                 raise Exception("Too Few Simulations Run")
         
@@ -373,7 +354,7 @@ class A0Agent(AgentBase):
     
     def _select(self, node: A0Node) -> A0Node:
         while node.board.get_winner() == 0:
-            node, parent, die1,die2,ms = node.next_child(self.c_puct)
+            node, parent, die1, die2, ms = node.next_child(self.c_puct)
             if not node:
                 return self._expand(node,parent,die1,die2,ms)
         return node
@@ -393,7 +374,7 @@ class A0Agent(AgentBase):
                 movesequence    = movesequence,
             )
 
-        c_key = tuple(movesequence)
+        c_key = ((die1,die2),tuple(movesequence))
         parent.children[c_key] = child
         return child
 
@@ -444,7 +425,7 @@ class A0Agent(AgentBase):
 
     def _select_move_with_temperature(self):
         moves = self.root.legal_movesequences
-        visits = [self.root.child_visits.get(tuple(c), 0) for c in moves]
+        visits = [self.root.group_visits.get(tuple(c), 0) for c in moves]
 
         # If nothing has been visited yet, just pick randomly
         if sum(visits) == 0:
@@ -466,8 +447,8 @@ class A0Agent(AgentBase):
         root = self.root
         total = 0
         for ms in root.legal_movesequences:
-            c_key = tuple(ms)
-            n = root.child_visits.get(c_key,0)
+            g_key = tuple(ms)
+            n = root.group_visits.get(g_key,0)
             total += n
             p_ms  = A0Node._flip_movesequence(ms,root.player)
             p_key = A0Node._movesequence_to_idx(p_ms)

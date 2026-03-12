@@ -16,18 +16,18 @@ from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, H
 from agents.A0Agent import A0Agent, A0Node
 from networks.A0Network import A0Network
 
-MAX_GAME_LENGTH = 30
+MAX_GAME_LENGTH = 15
 
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
 TEMP_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_temp_model.pth"
 GAME_DATA_PATH =  f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_dataset.pkl"
 
-TRAIN_SIMS = 800
-TRAIN_GAMES = 100
+TRAIN_SIMS = 400
+TRAIN_GAMES = 50
 TRAIN_C_PUCT = 1
 TRAIN_DIRICHLET_ALPHA = 0.1
 TRAIN_DIRICHLET_EPSILON = 0.33
-TRAIN_TEMPERATURE = 2
+TRAIN_TEMPERATURE = 1
 TRAIN_TEMPREATURE_PLY = 6
 
 EVAL_SIMS = 1
@@ -59,7 +59,7 @@ class A0Trainer:
         self.num_epochs     = num_epochs
 
         self.deque_path     = deque_path
-        self.deque_size     = TRAIN_GAMES * 10
+        self.deque_size     = TRAIN_GAMES * 5
         self.game_buffer    = self._load_deque()
 
         if device:
@@ -101,7 +101,7 @@ class A0Trainer:
         print(f"Playing games on: {self.core_no} Cores")
         print()
 
-    def train(self,iterations = 10):
+    def train(self,iterations = 50):
         for i in range(iterations):
             print()
             print(f"Iteration {i+1} started at: {time_str()}")
@@ -164,6 +164,9 @@ class A0Trainer:
                 # Loss = policy loss + value loss + L2 regularization
                 policy_loss = -(p_batch * pol_pred).sum(dim=1).mean()
                 value_loss = F.mse_loss(v_pred, v_batch)
+
+                # for vp,vb in zip(v_pred,v_batch):
+                #     print(int(vp),int(vb))
 
                 loss = policy_loss + self.value_c * value_loss
                 total_loss += loss
@@ -408,12 +411,31 @@ def generate_dataset(model_path):
     ctx = mp.get_context("spawn")
 
     dataset = []
+    finished = 0
     with ProcessPoolExecutor(max_workers=CPU_COUNT, mp_context=ctx, initializer=worker_init) as ex:
         futures = [ex.submit(self_play_game,model_path) for _ in range(TRAIN_GAMES)]
         for future in as_completed(futures):
             # If a worker raised, .result() will re-raise that exception here.
             game = future.result()
             dataset.append(game)
+
+            finished += 1
+            print(f"{finished}/{TRAIN_GAMES}, ",end="",flush=True)
+
+    red_wins = 0
+    blu_wins = 0
+    non_wins = 0
+
+    for game in dataset:
+        w = game[0][2]
+        if w == 1:
+            red_wins += 1
+        if w == -1:
+            blu_wins += 1
+        if w == 0:
+            non_wins += 1
+
+    print(f"\nRed Wins: {red_wins}, Blue Wins {blu_wins}, Draws: {non_wins}")
 
     return dataset
 

@@ -285,8 +285,8 @@ class A0Agent(AgentBase):
         self.root = A0Node(board=root_board, player=self.player)
         self.root.get_val_init_pri(self.model)
 
-        if self.training_on:
-            self._add_noise_to_root()
+        # if self.training_on:
+        self._add_noise_to_root()
 
         for _ in range(self.simulations):
             node = self._select(self.root)

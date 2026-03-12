@@ -1,9 +1,9 @@
 from copy import deepcopy
 import numpy as np
 
-BOARD_SIZE = 24
-TOTAL_PLAYER_PIECES = 2
-HOME_SIZE = 6
+BOARD_SIZE = 6
+TOTAL_PLAYER_PIECES = 5
+HOME_SIZE = 2
 DIE_SIZE = 2
 
 BOARD_START = 2            
@@ -54,7 +54,11 @@ class Board():
         self._tiles = np.zeros([GAME_SIZE],dtype=np.int8)
 
         self._tiles[BOARD_START] = 2
-        self._tiles[BOARD_END] = -2            
+
+        self._tiles[BOARD_START+2] = -3
+        self._tiles[BOARD_END-2] = 3   
+
+        self._tiles[BOARD_END] = -2
         
         assert len(self._tiles) == BOARD_SIZE+4, f"Array length ({len(self._tiles)}) must be {BOARD_SIZE+4}"
         assert sum(self._tiles[self._tiles>0]) == TOTAL_PLAYER_PIECES, f"RED must have ({TOTAL_PLAYER_PIECES}) pieces ({sum(self._tiles[self._tiles>0])})"
@@ -417,7 +421,7 @@ class Board():
         piece_right_out = f"{get_spaced_str_board(self._tiles[GAME_SIZE//2:P1HOME_START])}  "
 
         # Right Home
-        label_right_home = " "*((5*HOME_SIZE)-9) + f" {BLU}Red Home "
+        label_right_home = " "*((5*HOME_SIZE)-9) + f" {RED}Red Home "
         numbe_right_home = f" {BOA}{get_spaced_str(list(np.arange(BOARD_SIZE-HOME_SIZE+1,BOARD_SIZE+1)))} "
         decor_right_home = f"+" + "----+"*HOME_SIZE
         piece_right_home = f"{get_spaced_str_board(self._tiles[P1HOME_START:BOARD_END+1])}  "

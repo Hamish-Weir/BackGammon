@@ -109,6 +109,12 @@ class MCTSAgent(AgentBase):
     def make_move(self, board: Board, die1: int, die2: int, turn = 0, opp_move = None):
         """Makes a move based on the current board state."""
 
+        temp = board.get_legal_movesequences(die1,die2,self.player)
+        if not temp:
+            return []
+        if len(temp) == 1:
+            return temp[0]
+
         temp_d1 = die1
         temp_d2 = die2
         die1 = max(temp_d1,temp_d2)

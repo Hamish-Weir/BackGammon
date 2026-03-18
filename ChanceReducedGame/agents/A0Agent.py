@@ -282,7 +282,8 @@ class A0Agent(AgentBase):
 
     def __init__(self, 
         player, 
-        model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
+        # model_path=f"models_trained/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_A0Model.pth",
+        model_path=f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth",
         simulations = 800,
         c_puct = 1,
         training_on = False,
@@ -322,6 +323,12 @@ class A0Agent(AgentBase):
 
     def make_move(self, board: Board, die1: int, die2: int, turn = 0, opp_move = None):
         """Makes a move based on the current board state."""
+
+        temp = board.get_legal_movesequences(die1,die2,self.player)
+        if not temp:
+            return []
+        if len(temp) == 1:
+            return temp[0]
 
         root_board = Board()
         root_board.set(board.get())

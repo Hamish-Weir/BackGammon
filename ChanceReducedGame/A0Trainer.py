@@ -17,7 +17,7 @@ from src.Board import BOARD_END, BOARD_SIZE, BOARD_START, DIE_SIZE, GAME_SIZE, H
 from agents.A0Agent import A0Agent, A0Node
 from networks.A0Network import A0Network
 
-MAX_GAME_LENGTH = 100
+MAX_GAME_LENGTH = 250
 
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
 TEMP_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_temp_model.pth"
@@ -59,10 +59,6 @@ class A0Trainer:
         self.batch_size     = batch_size
         self.num_epochs     = num_epochs
 
-        self.deque_path     = deque_path
-        self.deque_size     = TRAIN_GAMES * 5
-        self.game_buffer    = self._load_deque()
-
         if device:
             try:
                 self.device             = torch.device(device)
@@ -95,6 +91,18 @@ class A0Trainer:
             torch.save(self.best_model.state_dict(), self.best_model_path)
             self.temp_model.load_state_dict(self.best_model.state_dict())
             print("Training new model from scratch", flush=True)
+
+        self.deque_path     = deque_path
+        self.deque_size     = TRAIN_GAMES * 10
+        t, self.game_buffer    = self._load_deque()
+
+        if not t:
+            # Model training breaks if the game buffer is too small?
+            print("Training Set Empty, Initialising")
+            for i in range(4):
+                print(f"    {i}/4")
+                self._play_step()
+            print("    Done!")
 
         print(f"Best Model Stored at: {self.best_model_path}")
         print(f"Temp Model Stored at: {self.temp_model_path}")
@@ -199,7 +207,7 @@ class A0Trainer:
         
         if not os.path.exists(self.deque_path):
             print(f"{self.deque_path} not found. Creating a new empty deque.")
-            return deque(maxlen=self.deque_size)
+            return False, deque(maxlen=self.deque_size)
 
         try:
             with open(self.deque_path, "rb") as f:
@@ -207,16 +215,16 @@ class A0Trainer:
 
             if not isinstance(obj, deque):
                 print(f"Warning: {self.deque_path} did not contain a deque. Creating a new one.")
-                return deque(maxlen=self.deque_size)
+                return False, deque(maxlen=self.deque_size)
             
             print("Loaded Existing Game Data")
 
-            return obj
+            return True, obj
 
         except Exception as e:
             print(f"Error loading {self.deque_path}: {e}")
             print("Creating a new empty deque.")
-            return deque(maxlen=self.deque_size)
+            return False, deque(maxlen=self.deque_size)
       
     def _save_deque(self):
         """Safely save a deque to disk."""
@@ -229,40 +237,40 @@ class A0Trainer:
         self.best_model.load_state_dict(torch.load(self.best_model_path))
 
         b = Board()
+        print(f"Starting Game State")
+        for die1, die2 in [(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)]:
+            n = A0Node(b,die1,die2,1)
+            v = n.get_val_init_pri(self.best_model)
+            p_dic = n.group_prior
 
-        n = A0Node(b,1)
-        v = n.get_val_init_pri(self.best_model)
-        p_dic = n.child_prior
-
-        print(f"Starting Game State Value: {v}")
-        print(f"Starting Game State Priors:")
-        for i in list(p_dic.items()):
-            print(f"{i[0]}, {i[1]:.5f}")
-
+            print(f"    Dice Roll: {die1,die2}")
+            print(f"        Value: {v}")
+            print(f"        Game State Priors:")
+            for i in list(p_dic.items()):
+                print(f"            {i[0]}, {i[1]:.5f}")
+            print()
         print()
 
         b = Board()
 
-        l = b.get_legal_movesequences(1)
+        l = b.get_legal_movesequences(1,1,1)
         b.do_move_sequence(l[0],1)
+
+        print(f"2nd Game State")
+        for die1, die2 in [(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)]:
+            n = A0Node(b,die1,die2,-1)
+            v = n.get_val_init_pri(self.best_model)
+            p_dic = n.group_prior
+
+            print(f"    Dice Roll: {die1,die2}")
+            print(f"        Value: {v}")
+            print(f"        Game State Priors:")
+            for i in list(p_dic.items()):
+                print(f"            {i[0]}, {i[1]:.5f}")
+            print()
+
         
-        # arr = b.get()
-        # arr[BOARD_START] = 0
-        # arr[BOARD_START+1] = 2
-            
-        # b.set(arr)
-
-        n = A0Node(b,-1)
-        v = n.get_val_init_pri(self.best_model)
-        p_dic = n.child_prior
-
-        print(f"Starting Game State Value: {v}")
-        print(f"Starting Game State Priors:")
-        for i in list(p_dic.items()):
-            print(f"{i[0]}, {i[1]:.5f}")
-
         print()
-
 
 def time_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

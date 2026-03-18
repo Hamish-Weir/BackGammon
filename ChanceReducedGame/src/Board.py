@@ -1,7 +1,7 @@
 from copy import deepcopy
 import numpy as np
 
-BOARD_SIZE = 12
+BOARD_SIZE = 6
 TOTAL_PLAYER_PIECES = 5
 HOME_SIZE = 2
 DIE_SIZE = 2
@@ -55,8 +55,21 @@ class Board():
 
         self._tiles[BOARD_START] = 2
 
-        self._tiles[BOARD_START+5] = -3
-        self._tiles[BOARD_END-5] = 3   
+        # self._tiles[BOARD_START+5] = -5
+        
+        # self._tiles[BOARD_START+7] = -3
+        
+        # self._tiles[BOARD_START+11] = 5
+
+        self._tiles[BOARD_START+2] = -3
+        
+        self._tiles[BOARD_END-2] = 3
+        
+        # self._tiles[BOARD_END-11] = -5  
+
+        # self._tiles[BOARD_END-7] = 3
+
+        # self._tiles[BOARD_END-5] = 5   
 
         self._tiles[BOARD_END] = -2
         

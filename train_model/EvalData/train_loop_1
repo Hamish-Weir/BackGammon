@@ -1,0 +1,16 @@
+A0 vs MCTS:
+  Red wins: 178
+  Blue wins: 812
+  Turn/Time outs: 10
+MCTS vs A0:
+  Red wins: 230
+  Blue wins: 761
+  Turn/Time outs: 9
+A0 vs RAND:
+  Red wins: 489
+  Blue wins: 497
+  Turn/Time outs: 14
+RAND vs A0:
+  Red wins: 508
+  Blue wins: 476
+  Turn/Time outs: 16

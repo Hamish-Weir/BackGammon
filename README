@@ -1,0 +1,42 @@
+This project has multiple sub-parts, each sub-part is intended to be run from its respective directory, due to python imports
+Sub-Part
+    Trivial Game:
+        BackGammon as simple as possible, 
+            Double Moves:               No
+            Chance:                     No
+            Board Size:                 6
+            Die Size/Max Step Size:     2
+            Home Size == Die Size:      2
+            Number of Pieces:           2
+
+    Reduced Game:
+        BackGammon as simple as possible, Scaled Up, 
+            Double Moves:               No
+            Chance:                     No
+            Board Size:                 Variable
+            Die Size/Max Step Size:     Variable
+            Home Size == Die Size:      Variable
+            Number of Pieces:           Variable
+
+    ChanceReducedGame:
+        BackGammon only Missing Double Moves, 
+            Double Moves:               No
+            Chance:                     Yes
+            Board Size:                 Variable
+            Die Size/Max Step Size:     Variable
+            Home Size == Die Size:      Variable
+            Number of Pieces:           Variable
+
+To change the Board size, Die Size, Home Size, Number of Pieces, there are Constants in Board.py that can be changed.
+However, if you change the Number of Pieces, you will need to edit the Board __init__ to have that number of pieces 
+
+All Games can be run by running
+    python ./Backgammon.py -p1 "agent.MCTSAgent MCTSAgent" -p2 "agent.A0Agent A0Agent"
+or more generaly
+    python ./Backgammon.py -p1 "filepath object" -p2 "filepath object"
+
+-t to turn timelimit off
+-v to use verbose mode
+
+sub-parts train_model and parallel are made to train on the UoM CSF3 / SLURM.
+while the A0Trainer.py file in each sub-part will train an A0Agent on any board eventualy, it can be very slow and timescales get very large, very fast, scaling with gamelength, branching factor and number of simulations.

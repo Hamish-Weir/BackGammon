@@ -6,6 +6,4 @@
 **/test*
 **/*.pth
 **/*.pkl
-
-play_parallel/
-train_model/
+**/*.out

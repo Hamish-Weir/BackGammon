@@ -1,9 +1,10 @@
 #!/bin/bash --login
 
 #SBATCH -p serial
-#SBATCH --array=1-1000
+#SBATCH --array=1-200
 #SBATCH -t 60
-#SBATCH -o data/eval_play_games_M_B/game_%A_%a.out
+#SBATCH -o /dev/null
+#SBATCH -e /dev/null
 
 # --- Load Modules ---
 module purge
@@ -13,4 +14,4 @@ module load apps/binapps/pytorch/2.6.0-312-gpu-cu124
 module load libs/cuda/12.4.1
 
 # --- Run one game ---
-python -u p4_play_eval_play.py "MCTS" "A0"
+python -u p4_play_eval_play.py "MCTS" "A0" "data/eval_play_games_M_B/$SLURM_ARRAY_TASK_ID.txt"

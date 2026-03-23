@@ -27,7 +27,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
 
-if len(sys.argv) == 3:
+if len(sys.argv) == 4:
     if sys.argv[1] == "A0":
         agent1 = A0Agent(1,BEST_MODEL_PATH,simulations=A0_SIMS)
     elif sys.argv[1] == "MCTS":
@@ -42,7 +42,11 @@ if len(sys.argv) == 3:
     else:
         agent2 = RandomAgent(-1)
     
+    output_path = sys.argv[3]
+
     print(f"Playing: {sys.argv[1]} vs {sys.argv[2]}")
+    print(f"Output Path: {output_path}")
+    
 else:
     agent1 = A0Agent(1,BEST_MODEL_PATH,simulations=A0_SIMS)
     agent2 = A0Agent(-1,BEST_MODEL_PATH,simulations=A0_SIMS)
@@ -92,7 +96,10 @@ while True:
 
     current_player = -current_player
 
-if sys.argv[1] == "A0":
-    print(board.get_winner())
-elif sys.argv[2] == "A0":
-    print(-board.get_winner())
+with open(output_path, "w") as f:
+    if sys.argv[1] == "A0":
+        f.write(str(board.get_winner()))
+        print(board.get_winner())
+    elif sys.argv[2] == "A0":
+        f.write(str(-board.get_winner()))
+        print(-board.get_winner())

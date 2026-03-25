@@ -1,8 +1,11 @@
 from datetime import datetime
 import os
+import pickle
 import random
 import sys
 import time
+from typing import Set
+
 
 import torch
 
@@ -15,6 +18,8 @@ from src.Board import BOARD_SIZE, DIE_SIZE, HOME_SIZE, TOTAL_PLAYER_PIECES, Boar
 start = time.process_time_ns()
 
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
+LEGAL_BOARDS_PATH = f"data/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_boardstates.pkl"
+
 A0_SIMS = 800
 MCTS_SIMS = 800
 MAX_TURNS = 20
@@ -68,10 +73,29 @@ players = {
 }
 
 board = Board()
+
+# def load_boardstates(Boards_Path):
+#     if not os.path.exists(Boards_Path):
+#         print(f"{Boards_Path} not found.")
+#         raise
+#     else:
+#         with open(Boards_Path, "rb") as f:
+#             dataset = pickle.load(f)
+#         return dataset
+
+# legal_boards = load_boardstates(LEGAL_BOARDS_PATH)
+
+# barr,pla = random.choice(legal_boards)
+# board.set(barr)
+# current_player = pla
+
+
 turn = 0
 r = random.randint
 
 opponentMove = None
+
+visited_boards = set()
 
 while True:
     turn += 1
@@ -85,6 +109,12 @@ while True:
     opponentMove = ms
 
     now = time.process_time_ns()
+
+    if tuple(board.get().flatten()) in visited_boards:
+        break
+    else:
+        visited_boards.add(tuple(board.get().flatten()))
+
     if board.get_winner() != 0 or turn == MAX_TURNS or (now-start) >= MAX_TIME:
         break
 
@@ -97,4 +127,3 @@ with open(output_path, "w") as f:
     elif sys.argv[2] == "A0":
         f.write(str(-board.get_winner()))
         print(-board.get_winner())
-

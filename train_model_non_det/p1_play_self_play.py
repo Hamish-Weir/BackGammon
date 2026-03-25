@@ -1,6 +1,8 @@
 
 import random
 import sys
+import os
+import pickle
 
 from src.Board import BOARD_SIZE, DIE_SIZE, HOME_SIZE, TOTAL_PLAYER_PIECES, Board
 from agents.A0Agent import A0Agent, A0Node
@@ -14,6 +16,8 @@ MAX_GAME_LENGTH = 60
 
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
 GAME_DATA_PATH =  f"data/self_play_games/{PID}_{SUB_PID}_dataset.pkl"
+LEGAL_BOARDS_PATH = f"data/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_boardstates.pkl"
+
 TRAIN_SIMULATIONS = 800
 TRAIN_EXPLORATION = 1
 TRAIN_C_PUCT = 1
@@ -34,6 +38,24 @@ players = {
 
 current_player = 1
 board = Board()
+
+def load_boardstates(Boards_Path):
+    if not os.path.exists(Boards_Path):
+        print(f"{Boards_Path} not found.")
+        raise
+    else:
+        with open(Boards_Path, "rb") as f:
+            dataset = pickle.load(f)
+        return dataset
+
+legal_boards = load_boardstates(LEGAL_BOARDS_PATH)
+
+if SUB_PID != 1:
+    barr,pla = random.choice(legal_boards)
+    board.set(barr)
+    current_player = pla
+
+
 turn = 0
 r = random.randint
 

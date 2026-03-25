@@ -94,44 +94,43 @@ for epoch in range(num_epochs):
     
     print(f"Epoch {epoch+1} loss: {total_loss/len(states)}")
 
+    print()
+    best_model.to(torch.device("cpu"))
+    b = Board()
+    print(f"Starting Game State")
+    for die1, die2 in [(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)]:
+        n = A0Node(b,die1,die2,1)
+        v = n.get_val_init_pri(best_model)
+        p_dic = n.group_prior
+
+        print(f"    Dice Roll: {die1,die2}")
+        print(f"        Value: {v}")
+        print(f"        Game State Priors:")
+        for i in list(p_dic.items()):
+            print(f"            {i[0]}, {i[1]:.5f}")
+        print()
+    print()
+
+    b = Board()
+
+    l = b.get_legal_movesequences(1,1,1)
+    b.do_move_sequence(l[0],1)
+
+    print(f"2nd Game State")
+    for die1, die2 in [(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)]:
+        n = A0Node(b,die1,die2,-1)
+        v = n.get_val_init_pri(best_model)
+        p_dic = n.group_prior
+
+        print(f"    Dice Roll: {die1,die2}")
+        print(f"        Value: {v}")
+        print(f"        Game State Priors:")
+        for i in list(p_dic.items()):
+            print(f"            {i[0]}, {i[1]:.5f}")
+        print()
+    print()
+
 print("Finished Training")
 
 torch.save(best_model.state_dict(), BEST_MODEL_PATH)
 print("New Best Model Saved")
-
-
-print()
-best_model.to(torch.device("cpu"))
-b = Board()
-print(f"Starting Game State")
-for die1, die2 in [(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)]:
-    n = A0Node(b,die1,die2,1)
-    v = n.get_val_init_pri(best_model)
-    p_dic = n.group_prior
-
-    print(f"    Dice Roll: {die1,die2}")
-    print(f"        Value: {v}")
-    print(f"        Game State Priors:")
-    for i in list(p_dic.items()):
-        print(f"            {i[0]}, {i[1]:.5f}")
-    print()
-print()
-
-b = Board()
-
-l = b.get_legal_movesequences(1,1,1)
-b.do_move_sequence(l[0],1)
-
-print(f"2nd Game State")
-for die1, die2 in [(i, j) for i in range(1, DIE_SIZE+1) for j in range(1, i+1)]:
-    n = A0Node(b,die1,die2,-1)
-    v = n.get_val_init_pri(best_model)
-    p_dic = n.group_prior
-
-    print(f"    Dice Roll: {die1,die2}")
-    print(f"        Value: {v}")
-    print(f"        Game State Priors:")
-    for i in list(p_dic.items()):
-        print(f"            {i[0]}, {i[1]:.5f}")
-    print()
-print()

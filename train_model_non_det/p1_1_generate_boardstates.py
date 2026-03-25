@@ -26,7 +26,10 @@ def collect_states_iterative(b:Board, depth, player):
         if d == 0:
             continue
 
-        lms = b.get_legal_movesequences(p)
+        lms = []
+        for d1 in range(1,DIE_SIZE+1):
+            for d2 in range(d1,DIE_SIZE+1):
+                lms.extend(b.get_legal_movesequences(d1,d2,p))
 
         for ms in lms:
             b.set(state)

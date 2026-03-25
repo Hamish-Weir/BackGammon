@@ -2,6 +2,7 @@
 import random
 import sys
 import time
+import os
 
 from src.Board import BOARD_SIZE, DIE_SIZE, HOME_SIZE, TOTAL_PLAYER_PIECES, Board
 from agents.A0Agent import A0Agent, A0Node
@@ -14,17 +15,19 @@ PID = sys.argv[1]
 SUB_PID = sys.argv[2]
 
 MAX_TURNS = 30
-MAX_TIME = 20 * 60 * 10**9
+MAX_TIME = 30 * 60 * 10**9
 
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
 GAME_DATA_PATH =  f"data/self_play_games/{PID}_{SUB_PID}_dataset.pkl"
+LEGAL_BOARDS_PATH = f"data/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_boardstates.pkl"
+
 TRAIN_SIMULATIONS = 800
 TRAIN_EXPLORATION = 1
 TRAIN_C_PUCT = 1
 TRAIN_DIRICHLET_ALPHA = 0.1
 TRAIN_DIRICHLET_EPSILON = 0.33
 TRAIN_TEMPERATURE = 1
-TRAIN_TEMPREATURE_PLY = 6
+TRAIN_TEMPREATURE_PLY = 10
 
 
 
@@ -38,6 +41,23 @@ players = {
 
 current_player = 1
 board = Board()
+
+def load_boardstates(Boards_Path):
+    if not os.path.exists(Boards_Path):
+        print(f"{Boards_Path} not found.")
+        raise
+    else:
+        with open(Boards_Path, "rb") as f:
+            dataset = pickle.load(f)
+        return dataset
+
+legal_boards = load_boardstates(LEGAL_BOARDS_PATH)
+
+if SUB_PID != 1:
+    barr,pla = random.choice(legal_boards)
+    board.set(barr)
+    current_player = pla
+
 turn = 0
 
 opponentMove = None
@@ -75,7 +95,7 @@ for i, (s, p, pl) in enumerate(game_history):
     elif -pl == winner:
         value = -1
     else:
-        value = 0
+        value = -0.5
 
     game_history[i] = (s, p, value)
 

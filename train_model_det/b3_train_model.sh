@@ -1,9 +1,8 @@
 #!/bin/bash --login
 
-#SBATCH -p gpuA
-#SBATCH -G 1
+#SBATCH -p serial
 #SBATCH -n 1
-#SBATCH -t 4
+#SBATCH -t 120
 #SBATCH -o data/b3_training.out
 
 

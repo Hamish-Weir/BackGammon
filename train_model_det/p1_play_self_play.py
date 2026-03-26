@@ -53,7 +53,7 @@ def load_boardstates(Boards_Path):
 
 legal_boards = load_boardstates(LEGAL_BOARDS_PATH)
 
-if SUB_PID != 1:
+if ((int(SUB_PID) % 50) != 1):
     barr,pla = random.choice(legal_boards)
     board.set(barr)
     current_player = pla
@@ -95,7 +95,10 @@ for i, (s, p, pl) in enumerate(game_history):
     elif -pl == winner:
         value = -1
     else:
-        value = -0.5
+        if pl == 1:
+            value = -1
+        else:
+            value = 1
 
     game_history[i] = (s, p, value)
 

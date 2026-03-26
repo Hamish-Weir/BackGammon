@@ -1,7 +1,7 @@
 #!/bin/bash --login
 
 #SBATCH -p serial
-#SBATCH --array=1-190
+#SBATCH --array=1-1000
 #SBATCH -t 60
 #SBATCH -o /dev/null
 #SBATCH -e /dev/null

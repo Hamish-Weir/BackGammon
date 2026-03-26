@@ -23,7 +23,7 @@ M_B = count_results("data/eval_play_games_M_B")
 R_R = count_results("data/eval_play_games_R_R")
 R_B = count_results("data/eval_play_games_R_B")
 
-output_path = f"data/b5_epoch_{sys.argv[1]}"
+output_path = f"data/b5_epoch_{sys.argv[1]}.txt"
 
 with open(output_path, "w") as f:
     f.write("A0 (RED) vs MCTS (BLUE):")

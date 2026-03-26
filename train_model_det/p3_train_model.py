@@ -14,9 +14,9 @@ from src.Board import BOARD_SIZE, DIE_SIZE, HOME_SIZE, TOTAL_PLAYER_PIECES, Boar
 BEST_MODEL_PATH = f"models/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_best_model.pth"
 GAME_DATA_PATH =  f"data/{BOARD_SIZE}_{DIE_SIZE}_{HOME_SIZE}_{TOTAL_PLAYER_PIECES}_dataset.pkl"
 
-learning_rate       = 0.002
+learning_rate       = 0.00002
 batch_size          = 64
-num_epochs          = 10
+num_epochs          = 2
 
 
 # Load Model and Data
@@ -93,7 +93,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
     
-    print(f"Epoch {epoch+1} loss: {total_loss/len(states)}")
+    print(f"Epoch {epoch+1}/{num_epochs} loss: {total_loss/len(states)}")
     
     print()
     best_model.to(torch.device("cpu"))

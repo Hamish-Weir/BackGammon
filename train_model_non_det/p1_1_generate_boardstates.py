@@ -23,6 +23,8 @@ def collect_states_iterative(b:Board, depth, player):
         state, d, p = stack.pop()
         b.set(state)
 
+        
+
         if d == 0:
             continue
 
@@ -35,6 +37,9 @@ def collect_states_iterative(b:Board, depth, player):
             b.set(state)
             b.do_move_sequence(ms, p)
 
+            if b.get_winner() != 0:
+                continue
+
             new_state = tuple((tuple(b.get().flatten()),player))
             if new_state not in boardSet:
                 boardSet.add(new_state)
@@ -45,7 +50,7 @@ def collect_states_iterative(b:Board, depth, player):
 
 b = Board()
 
-boardlist = collect_states_iterative(b,10,1)
+boardlist = collect_states_iterative(b,3,1)
 
 with open(LEGAL_BOARDS_PATH, "wb") as f:
     pickle.dump(boardlist, f)

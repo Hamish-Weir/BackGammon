@@ -1,9 +1,10 @@
 #!/bin/bash --login
 
 #SBATCH -p serial
-#SBATCH --array=1-1000
+#SBATCH --array=1-100
 #SBATCH -t 60
-#SBATCH -o data/eval_play_games_R_R/game_%A_%a.out
+#SBATCH -o /dev/null
+#SBATCH -e /dev/null
 
 # --- Load Modules ---
 module purge

@@ -2,7 +2,6 @@
 import random
 import sys
 import os
-import pickle
 
 from src.Board import BOARD_SIZE, DIE_SIZE, HOME_SIZE, TOTAL_PLAYER_PIECES, Board
 from agents.A0Agent import A0Agent, A0Node
@@ -50,10 +49,11 @@ def load_boardstates(Boards_Path):
 
 legal_boards = load_boardstates(LEGAL_BOARDS_PATH)
 
-if ((int(SUB_PID) % 50) != 1):
+if ((int(SUB_PID) % 20) != 1):
     barr,pla = random.choice(legal_boards)
     board.set(barr)
     current_player = pla
+
 
 
 turn = 0

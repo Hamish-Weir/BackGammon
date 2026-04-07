@@ -40,3 +40,4 @@ or more generaly
 
 sub-parts train_model and parallel are made to train on the UoM CSF3 / SLURM.
 while the A0Trainer.py file in each sub-part will train an A0Agent on any board eventualy, it can be very slow and timescales get very large, very fast, scaling with gamelength, branching factor and number of simulations.
+Additionaly, the SLURM training scripts also include random starting positions, which improve robustness of the network

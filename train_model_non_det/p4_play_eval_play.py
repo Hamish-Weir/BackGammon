@@ -42,16 +42,13 @@ if len(sys.argv) == 4:
     else:
         agent2 = RandomAgent(-1)
     
-    output_path = sys.argv[3]
-
     print(f"Playing: {sys.argv[1]} vs {sys.argv[2]}")
-    print(f"Output Path: {output_path}")
-    
 else:
     agent1 = A0Agent(1,BEST_MODEL_PATH,simulations=A0_SIMS)
     agent2 = A0Agent(-1,BEST_MODEL_PATH,simulations=A0_SIMS)
     print(f"Playing: A0 vs A0")
 
+output_path = sys.argv[3]
 
 player1 = Player(
     "P1",
@@ -103,3 +100,4 @@ with open(output_path, "w") as f:
     elif sys.argv[2] == "A0":
         f.write(str(-board.get_winner()))
         print(-board.get_winner())
+

@@ -1,7 +1,7 @@
 #!/bin/bash --login
 
 #SBATCH -p serial
-#SBATCH -t 2
+#SBATCH -t 4
 #SBATCH -o data/b2_gameplay.out
 
 # --- Load Modules ---
